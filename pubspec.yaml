@@ -1,0 +1,45 @@
+name: dev_motors
+description: "Dev Motors Dealership Expense Management System"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  google_fonts: ^6.1.0
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  http: ^1.2.1
+  shared_preferences: ^2.2.3
+  intl: ^0.20.2
+  file_picker: ^10.1.9
+  image_picker: ^1.0.7
+  fl_chart: ^0.66.0
+  excel: ^4.0.3
+  path_provider: ^2.1.2
+  open_file: ^3.3.2
+  universal_html: ^2.2.4
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon/app_icon.png"
+  min_sdk_android: 21
+  web:
+    generate: true
+    image_path: "assets/icon/app_icon.png"
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/icon/
+    - assets/images/
