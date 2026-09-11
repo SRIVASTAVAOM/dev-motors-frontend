@@ -1,0 +1,11 @@
+.git
+.dart_tool
+android
+ios
+linux
+macos
+windows
+backend
+test
+build/app
+build/flutter_assets
