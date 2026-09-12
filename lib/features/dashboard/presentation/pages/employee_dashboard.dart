@@ -62,12 +62,12 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
 
   List<dynamic> get _activeList => _myOwnExpenses.where((e) {
     if (e is! Map) return false;
-    return ClaimWorkflowEngine.isVisibleInEmployeeActive(e['status']);
+    return ClaimWorkflowEngine.isVisibleInEmployeeActive(e['status'], e);
   }).toList();
 
   List<dynamic> get _historyList => _myOwnExpenses.where((e) {
     if (e is! Map) return false;
-    return ClaimWorkflowEngine.isSettledOrRejected(e['status']);
+    return ClaimWorkflowEngine.isSettledOrRejected(e['status'], e);
   }).toList();
 
   @override
@@ -288,7 +288,7 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
                         final receiptData = (rawReceipt is Map) ? '' : rawReceipt.toString();
                         final hasReceipt = receiptData.trim().isNotEmpty && receiptData != 'null';
 
-                        final isPendingApproval1 = ClaimWorkflowEngine.isPendingForManager(statusStr);
+                        final isPendingApproval1 = ClaimWorkflowEngine.isPendingForManager(statusStr, exp);
 
                         return Container(
                           padding: const EdgeInsets.all(16),

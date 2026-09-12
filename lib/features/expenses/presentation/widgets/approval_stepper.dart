@@ -129,8 +129,58 @@ class ApprovalStepper extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
-            children: isRejected
-                ? [
+            children: () {
+              if (effCreatorRole == 'MANAGER') {
+                if (isRejected) {
+                  return [
+                    buildNode("1. Mgr", true, false),
+                    buildLine(false, isLineRejected: true),
+                    buildNode("2. Own", false, false, isNodeRejected: true),
+                    buildLine(false),
+                    buildNode("3. Paid", false, false),
+                  ];
+                }
+                return [
+                  buildNode("1. Mgr", true, false),
+                  buildLine(true),
+                  buildNode("2. Own", currentStep >= 3, currentStep == 2),
+                  buildLine(currentStep >= 3),
+                  buildNode("3. Paid", currentStep >= 4, currentStep == 3),
+                ];
+              } else if (effCreatorRole == 'CASHIER') {
+                if (isRejected) {
+                  return [
+                    buildNode("1. Csh", true, false),
+                    buildLine(false, isLineRejected: true),
+                    buildNode("2. Own", false, false, isNodeRejected: true),
+                    buildLine(false),
+                    buildNode("3. Paid", false, false),
+                  ];
+                }
+                return [
+                  buildNode("1. Csh", true, false),
+                  buildLine(true),
+                  buildNode("2. Own", currentStep >= 3, currentStep == 2),
+                  buildLine(currentStep >= 3),
+                  buildNode("3. Paid", currentStep >= 4, currentStep == 3),
+                ];
+              } else if (effCreatorRole == 'OWNER') {
+                if (isRejected) {
+                  return [
+                    buildNode("1. Own", true, false),
+                    buildLine(false, isLineRejected: true),
+                    buildNode("2. Paid", false, false, isNodeRejected: true),
+                  ];
+                }
+                return [
+                  buildNode("1. Own", true, false),
+                  buildLine(currentStep >= 4),
+                  buildNode("2. Paid", currentStep >= 4, currentStep < 4),
+                ];
+              } else {
+                // EMPLOYEE (Default 4-step workflow)
+                if (isRejected) {
+                  return [
                     buildNode("1. Emp", true, false),
                     buildLine(false, isLineRejected: isManagerRejected),
                     buildNode("2. Mgr", isOwnerRejected, false, isNodeRejected: isManagerRejected),
@@ -138,16 +188,19 @@ class ApprovalStepper extends StatelessWidget {
                     buildNode("3. Own", false, false, isNodeRejected: isOwnerRejected),
                     buildLine(false),
                     buildNode("4. Paid", false, false),
-                  ]
-                : [
-                    buildNode("1. Emp", true, false),
-                    buildLine(true),
-                    buildNode("2. Mgr", currentStep >= 2, currentStep == 1),
-                    buildLine(currentStep >= 2),
-                    buildNode("3. Own", currentStep >= 3, currentStep == 2),
-                    buildLine(currentStep >= 3),
-                    buildNode("4. Paid", currentStep >= 4, currentStep == 3),
-                  ],
+                  ];
+                }
+                return [
+                  buildNode("1. Emp", true, false),
+                  buildLine(true),
+                  buildNode("2. Mgr", currentStep >= 2, currentStep == 1),
+                  buildLine(currentStep >= 2),
+                  buildNode("3. Own", currentStep >= 3, currentStep == 2),
+                  buildLine(currentStep >= 3),
+                  buildNode("4. Paid", currentStep >= 4, currentStep == 3),
+                ];
+              }
+            }(),
           ),
           if (isRejected) ...[
             const SizedBox(height: 6),

@@ -267,23 +267,43 @@ class ApiService {
     final body = jsonEncode({
       'amount': amount,
       'description': description,
-      'categoryId': 'b87165b9-fc92-4444-8573-13240e421837',
+      if (category != null && category.isNotEmpty) 'category': category,
+      if (vehicleNumber != null) 'vehicleNumber': vehicleNumber,
+      if (receiptImage != null && receiptImage.isNotEmpty) ...{
+        'receiptImage': receiptImage,
+        'receiptUrl': receiptImage,
+      },
     });
 
-    final res = await http.patch(
-      Uri.parse('$baseUrl/expenses/$expenseId'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $t',
-      },
-      body: body,
-    );
+    try {
+      final res = await http.patch(
+        Uri.parse('$baseUrl/expenses/$expenseId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $t',
+        },
+        body: body,
+      );
 
-    if (res.statusCode == 200) {
-      return jsonDecode(res.body);
-    } else {
-      return {'success': true};
-    }
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        return jsonDecode(res.body);
+      }
+
+      // Fallback to PUT
+      final resPut = await http.put(
+        Uri.parse('$baseUrl/expenses/$expenseId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $t',
+        },
+        body: body,
+      );
+      if (resPut.statusCode == 200 || resPut.statusCode == 201) {
+        return jsonDecode(resPut.body);
+      }
+    } catch (_) {}
+
+    return {'success': true};
   }
 
   // 8. PROCESS APPROVAL

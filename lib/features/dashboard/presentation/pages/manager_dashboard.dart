@@ -197,15 +197,36 @@ class _ManagerDashboardState extends State<ManagerDashboard> {
 
   List<dynamic> get _myClaimsList => _expenses.where((e) {
     if (e is! Map) return false;
-    return _isClaimCreatedByMe(e);
+    return _isClaimCreatedByMe(e) && !ClaimWorkflowEngine.isSettledOrRejected(e['status'], e);
   }).toList();
 
-  List<dynamic> get _historyList => _expenses.where((e) {
-    if (e is! Map) return false;
-    if (_isClaimCreatedByMe(e)) return false;
-    final status = e['status'];
-    return !ClaimWorkflowEngine.isPendingForManager(status, e);
-  }).toList();
+  List<dynamic> get _historyList {
+    final mgrBranch = _currentMgrBranch;
+    return _expenses.where((e) {
+      if (e is! Map) return false;
+      if (_isClaimCreatedByMe(e)) {
+        return ClaimWorkflowEngine.isSettledOrRejected(e['status'], e);
+      }
+      if (!_showAllBranches) {
+        final expBranch = e['branch'] ??
+            e['branchName'] ??
+            (e['location'] is Map ? e['location']['name'] : e['location']) ??
+            (e['employee'] is Map ? e['employee']['branch'] : null) ??
+            (e['employee'] is Map
+                ? (e['employee']['location'] is Map ? e['employee']['location']['name'] : e['employee']['location'])
+                : null);
+
+        if (!ClaimWorkflowEngine.matchesBranch(
+          userBranch: mgrBranch,
+          expenseBranch: expBranch,
+        )) {
+          return false;
+        }
+      }
+      final status = e['status'];
+      return !ClaimWorkflowEngine.isPendingForManager(status, e);
+    }).toList();
+  }
 
   @override
   Widget build(BuildContext context) {

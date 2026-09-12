@@ -82,7 +82,7 @@ void main() {
       expect(find.text('Rejected by Manager: Tax invoice missing'), findsOneWidget);
     });
 
-    testWidgets('renders manager-created claim with steps 1 & 2 checked and step 3 active with owner review banner', (WidgetTester tester) async {
+    testWidgets('renders manager-created claim with 3-step timeline (1. Mgr -> 2. Own -> 3. Paid) and owner review banner', (WidgetTester tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
@@ -94,15 +94,15 @@ void main() {
         ),
       );
 
-      expect(find.text('1. Emp'), findsOneWidget);
-      expect(find.text('2. Mgr'), findsOneWidget);
-      expect(find.text('3. Own'), findsOneWidget);
-      expect(find.text('4. Paid'), findsOneWidget);
-      expect(find.byIcon(Icons.check), findsNWidgets(2)); // Both Emp and Mgr completed
+      expect(find.text('1. Mgr'), findsOneWidget);
+      expect(find.text('2. Own'), findsOneWidget);
+      expect(find.text('3. Paid'), findsOneWidget);
+      expect(find.text('1. Emp'), findsNothing); // Employee has NO role in manager expense!
+      expect(find.byIcon(Icons.check), findsOneWidget); // Step 1 (Mgr) completed
       expect(find.text('Manager Claim • In Owner Review Queue'), findsOneWidget);
     });
 
-    testWidgets('renders manager-created claim rejected by owner with red cross on step 3', (WidgetTester tester) async {
+    testWidgets('renders manager-created claim rejected by owner with red cross on step 2 (Own)', (WidgetTester tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
@@ -115,10 +115,12 @@ void main() {
         ),
       );
 
-      expect(find.text('1. Emp'), findsOneWidget);
-      expect(find.text('2. Mgr'), findsOneWidget);
-      expect(find.text('3. Own ✕'), findsOneWidget);
-      expect(find.byIcon(Icons.close), findsOneWidget); // Red cross on step 3 (Owner)
+      expect(find.text('1. Mgr'), findsOneWidget);
+      expect(find.text('2. Own ✕'), findsOneWidget);
+      expect(find.text('3. Paid'), findsOneWidget);
+      expect(find.text('1. Emp'), findsNothing); // Employee has NO role in manager expense!
+      expect(find.byIcon(Icons.check), findsOneWidget); // Step 1 (Mgr) completed
+      expect(find.byIcon(Icons.close), findsOneWidget); // Red cross on step 2 (Owner)
       expect(find.text('Rejected by Owner: Exceeded department budget'), findsOneWidget);
     });
   });
