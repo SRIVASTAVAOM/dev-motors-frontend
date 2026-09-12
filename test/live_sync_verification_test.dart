@@ -114,4 +114,90 @@ void main() {
     );
     expect(empNotifsStage4.any((n) => n['type'] == 'PAID'), isTrue);
   });
+
+  test('Verify Location-Wise Branch Accountant (Cashier) Isolation & Workflow', () {
+    final aligarhCashier = {
+      'id': 'csh-aligarh',
+      'employeeId': 'nexa_shivam_acc',
+      'name': 'Shivam (Aligarh Accountant)',
+      'role': 'CASHIER',
+      'branch': 'Aligarh Nexa',
+    };
+
+    final khairCashier = {
+      'id': 'csh-khair',
+      'employeeId': 'khair_rohit_acc',
+      'name': 'Rohit (Khair Accountant)',
+      'role': 'CASHIER',
+      'branch': 'Khair',
+    };
+
+    final aligarhApprovedClaim = {
+      'id': 'EXP_ALIGARH_01',
+      'amount': 2500,
+      'description': 'Aligarh showroom spare parts',
+      'status': 'PENDING_CASHIER',
+      'branch': 'Aligarh Nexa',
+      'employeeId': 'nexa_muneesh_bsm',
+      'creatorRole': 'EMPLOYEE',
+    };
+
+    final khairApprovedClaim = {
+      'id': 'EXP_KHAIR_01',
+      'amount': 3000,
+      'description': 'Khair workshop tools',
+      'status': 'PENDING_CASHIER',
+      'branch': 'Khair',
+      'employeeId': 'khair_dev_wm',
+      'creatorRole': 'MANAGER',
+    };
+
+    final allClaims = [aligarhApprovedClaim, khairApprovedClaim];
+
+    // 1. Aligarh Accountant must ONLY see Aligarh claims in payout queue
+    final aligarhPayoutQueue = allClaims.where((e) {
+      if (!ClaimWorkflowEngine.isPendingForCashier(e['status'], e)) return false;
+      return ClaimWorkflowEngine.matchesBranch(
+        userBranch: aligarhCashier['branch'],
+        expenseBranch: e['branch'],
+        currentUser: aligarhCashier,
+      );
+    }).toList();
+
+    expect(aligarhPayoutQueue.length, equals(1));
+    expect(aligarhPayoutQueue.first['id'], equals('EXP_ALIGARH_01'));
+
+    // 2. Khair Accountant must ONLY see Khair claims in payout queue
+    final khairPayoutQueue = allClaims.where((e) {
+      if (!ClaimWorkflowEngine.isPendingForCashier(e['status'], e)) return false;
+      return ClaimWorkflowEngine.matchesBranch(
+        userBranch: khairCashier['branch'],
+        expenseBranch: e['branch'],
+        currentUser: khairCashier,
+      );
+    }).toList();
+
+    expect(khairPayoutQueue.length, equals(1));
+    expect(khairPayoutQueue.first['id'], equals('EXP_KHAIR_01'));
+
+    // 3. Aligarh Accountant receives notifications ONLY for Aligarh payout claims
+    final aligarhNotifs = NotificationService.getNotificationsForRole(
+      'CASHIER',
+      allClaims,
+      userBranch: aligarhCashier['branch'],
+      currentUser: aligarhCashier,
+    );
+    expect(aligarhNotifs.length, equals(1));
+    expect(aligarhNotifs.first['expenseId'], equals('EXP_ALIGARH_01'));
+
+    // 4. Khair Accountant receives notifications ONLY for Khair payout claims
+    final khairNotifs = NotificationService.getNotificationsForRole(
+      'CASHIER',
+      allClaims,
+      userBranch: khairCashier['branch'],
+      currentUser: khairCashier,
+    );
+    expect(khairNotifs.length, equals(1));
+    expect(khairNotifs.first['expenseId'], equals('EXP_KHAIR_01'));
+  });
 }
