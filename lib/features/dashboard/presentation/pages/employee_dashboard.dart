@@ -58,7 +58,14 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
     }
   }
 
-  List<dynamic> get _myOwnExpenses => _expenses;
+  List<dynamic> get _myOwnExpenses {
+    final me = _profile ?? ApiService.currentUser;
+    if (me == null) return _expenses;
+    return _expenses.where((e) {
+      if (e is! Map) return false;
+      return ClaimWorkflowEngine.isClaimCreatedByUser(e, me);
+    }).toList();
+  }
 
   List<dynamic> get _activeList => _myOwnExpenses.where((e) {
     if (e is! Map) return false;
@@ -333,7 +340,7 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
                                   _getString(exp['id']).isNotEmpty ? _getString(exp['id']) : _getString(exp['_id']),
                                   exp,
                                 ),
-                                creatorRole: 'EMPLOYEE',
+                                creatorRole: ClaimWorkflowEngine.extractCreatorRole(exp),
                                 expense: exp,
                               ),
 
