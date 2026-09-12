@@ -80,12 +80,23 @@ class _CashierDashboardState extends State<CashierDashboard> {
     }
   }
 
+  bool _showAllBranches = true;
+
+  bool get _isSeniorCashier => ClaimWorkflowEngine.isSeniorCashier(_profile ?? ApiService.currentUser);
+
   bool _isClaimCreatedByMe(dynamic exp) {
     return ClaimWorkflowEngine.isClaimCreatedByUser(exp, _profile ?? ApiService.currentUser);
   }
 
   List<dynamic> get _payoutQueue => _expenses.where((e) {
     if (e is! Map) return false;
+    final userBranch = _getString(_profile?['branch'] ?? _profile?['location'], '');
+    if (!_isSeniorCashier || !_showAllBranches) {
+      final rawBranch = e['branch'] ?? (e['location'] is Map ? e['location']['name'] : e['location']);
+      if (userBranch.isNotEmpty && !ClaimWorkflowEngine.matchesBranch(userBranch: userBranch, expenseBranch: rawBranch, currentUser: _profile ?? ApiService.currentUser)) {
+        return false;
+      }
+    }
     return ClaimWorkflowEngine.isPendingForCashier(e['status'], e);
   }).toList();
 
@@ -139,8 +150,8 @@ class _CashierDashboardState extends State<CashierDashboard> {
                   children: [
                     const CircleAvatar(
                       radius: 22,
-                      backgroundColor: Color(0xffDCFCE7),
-                      child: Icon(Icons.point_of_sale, color: Colors.green, size: 24),
+                      backgroundColor: Color(0xff2563EB),
+                      child: Icon(Icons.point_of_sale, color: Colors.white, size: 22),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -180,7 +191,14 @@ class _CashierDashboardState extends State<CashierDashboard> {
                         IconButton(
                           tooltip: "Notifications",
                           icon: const Icon(Icons.notifications_none, color: Colors.grey),
-                          onPressed: () => NotificationService.showNotificationSheet(context, 'CASHIER', _expenses, () => setState(() {})),
+                          onPressed: () => NotificationService.showNotificationSheet(
+                            context,
+                            'CASHIER',
+                            _expenses,
+                            () => setState(() {}),
+                            currentUser: _profile ?? ApiService.currentUser,
+                            userBranch: userBranch,
+                          ),
                         ),
                         if (notifs.isNotEmpty)
                           Positioned(
@@ -221,7 +239,60 @@ class _CashierDashboardState extends State<CashierDashboard> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
+
+                if (_isSeniorCashier && _selectedTab == 0) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xffEFF6FF),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xffBFDBFE)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.shield_outlined, color: Color(0xff2563EB), size: 20),
+                        const SizedBox(width: 10),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Senior / Chief Cashier Oversight",
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xff1E40AF)),
+                              ),
+                              Text(
+                                "All Dealership Branches Payout Authority",
+                                style: TextStyle(fontSize: 11, color: Color(0xff3B82F6)),
+                              ),
+                            ],
+                          ),
+                        ),
+                        InkWell(
+                          onTap: () => setState(() => _showAllBranches = !_showAllBranches),
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: _showAllBranches ? const Color(0xff2563EB) : Colors.white,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: const Color(0xff2563EB)),
+                            ),
+                            child: Text(
+                              _showAllBranches ? "All Branches" : "My Branch",
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: _showAllBranches ? Colors.white : const Color(0xff2563EB),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
 
                 if (_isLoading)
                   const Center(child: Padding(padding: EdgeInsets.all(40), child: CircularProgressIndicator()))

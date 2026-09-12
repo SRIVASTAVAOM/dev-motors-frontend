@@ -46,12 +46,23 @@ class ClaimWorkflowEngine {
   static bool matchesBranch({
     required dynamic userBranch,
     required dynamic expenseBranch,
+    dynamic currentUser,
   }) {
+    if (currentUser != null && isSeniorCashier(currentUser)) {
+      return true;
+    }
+
     final uNorm = normalizeBranch(userBranch);
     final eNorm = normalizeBranch(expenseBranch);
 
-    // Administrative / Superuser access check
-    if (uNorm.isEmpty || _adminBranchKeywords.contains(uNorm)) {
+    // Administrative / Senior Cashier / Superuser access check
+    if (uNorm.isEmpty ||
+        _adminBranchKeywords.contains(uNorm) ||
+        uNorm.contains('chief') ||
+        uNorm.contains('finance') ||
+        uNorm.contains('senior') ||
+        uNorm.contains('head') ||
+        uNorm.contains('central')) {
       return true;
     }
 
@@ -63,12 +74,29 @@ class ClaimWorkflowEngine {
       return true;
     }
 
-    // Suffix / substring tolerant matching (e.g., 'south delhi' and 'delhi')
     if (uNorm.contains(eNorm) || eNorm.contains(uNorm)) {
       return true;
     }
 
     return false;
+  }
+
+  /// Safely determines if the user has Senior / Chief Cashier privileges with company-wide oversight.
+  static bool isSeniorCashier(dynamic user) {
+    if (user == null) return false;
+    final empId = SafeParser.getString(user is Map ? user['employeeId'] : user).toUpperCase().trim();
+    final name = SafeParser.getString(user is Map ? user['name'] : '').toLowerCase();
+    final desig = SafeParser.getString(user is Map ? (user['designation'] ?? user['title']) : '').toLowerCase();
+    final branch = SafeParser.getString(user is Map ? (user['branch'] ?? (user['location'] is Map ? user['location']['name'] : user['location'])) : '').toLowerCase();
+    return empId == 'CASH001' ||
+        name.contains('chief') ||
+        name.contains('senior') ||
+        name.contains('finance') ||
+        desig.contains('chief') ||
+        desig.contains('senior') ||
+        desig.contains('finance') ||
+        branch.contains('chief') ||
+        branch.contains('central');
   }
 
   /// Safely determines whether a claim was created by the given user.
@@ -273,10 +301,9 @@ class ClaimWorkflowEngine {
   }
 
   /// Returns `true` only for initial pending states (`PENDING`, `SUBMITTED`, `LEVEL_1`, `MANAGER_REVIEW`, `PENDING_MANAGER`).
-  /// Returns `false` for `MANAGER_APPROVED`, `OWNER`, `REJECTED`, `PAID`, etc.
-  /// If [exp] is provided, claims created by true Manager, Owner, or Cashier bypass Manager review and return `false`.
+  /// Returns `false` for `PENDING_OWNER`, `PENDING_CASHIER`, `APPROVED`, `REJECTED`, `PAID`, etc.
   static bool isPendingForManager(dynamic rawStatus, [dynamic exp]) {
-    if (isSettledOrRejected(rawStatus)) return false;
+    if (isSettledOrRejected(rawStatus, exp)) return false;
 
     // Check bypass FIRST: Manager, Owner, or Cashier-created claims NEVER enter Manager level 1 review
     if (exp != null) {
@@ -295,7 +322,9 @@ class ClaimWorkflowEngine {
     if (s.isEmpty) return true;
 
     // Explicit checks for later stages
-    if (s.contains('OWNER') ||
+    if (s == 'PENDING_OWNER' ||
+        s == 'PENDING_CASHIER' ||
+        s.contains('OWNER') ||
         s.contains('CASHIER') ||
         s.contains('FINANCE') ||
         s.contains('DIRECTOR') ||
@@ -308,17 +337,13 @@ class ClaimWorkflowEngine {
       return false;
     }
 
-    // If status is explicitly PENDING_MANAGER, it is pending for manager (since role is EMPLOYEE)
-    if (s == 'PENDING_MANAGER') {
-      return true;
-    }
-
     // Initial pending stages
     return s == 'PENDING' ||
         s == 'SUBMITTED' ||
         s == 'LEVEL_1' ||
         s == 'MANAGER_REVIEW' ||
         s == 'PENDING_APPROVAL' ||
+        s == 'PENDING_MANAGER' ||
         (s.contains('PENDING') && !s.contains('OWNER') && !s.contains('CASHIER'));
   }
 
@@ -326,7 +351,7 @@ class ClaimWorkflowEngine {
   /// Incorporates the bypass matrix: Manager-created and Cashier-created expenses
   /// directly enter the Owner queue.
   static bool isPendingForOwner(dynamic rawStatus, [dynamic exp]) {
-    if (isSettledOrRejected(rawStatus)) return false;
+    if (isSettledOrRejected(rawStatus, exp)) return false;
 
     final id = exp is Map ? SafeParser.getString(exp['id'] ?? exp['_id']) : '';
     if (id.isNotEmpty && isOwnerApproved(id)) {
@@ -335,11 +360,12 @@ class ClaimWorkflowEngine {
 
     final s = SafeParser.getString(rawStatus).toUpperCase().trim();
 
-    // Terminal or already forwarded to Cashier
-    if (s == 'APPROVED_2' ||
-        s == 'PENDING_CASHIER' ||
+    // If forwarded to Cashier or already approved by Owner
+    if (s == 'PENDING_CASHIER' ||
+        s == 'APPROVED_2' ||
         s == 'OWNER_APPROVED' ||
         s == 'APPROVED_OWNER' ||
+        s == 'APPROVED' ||
         s.contains('CASHIER')) {
       return false;
     }
@@ -348,7 +374,6 @@ class ClaimWorkflowEngine {
     if (s == 'PENDING_OWNER' ||
         s == 'APPROVED_1' ||
         s == 'MANAGER_APPROVED' ||
-        s == 'APPROVED' ||
         s.contains('DIRECTOR') ||
         s == 'LEVEL_2') {
       return true;
@@ -383,11 +408,14 @@ class ClaimWorkflowEngine {
 
     final s = SafeParser.getString(rawStatus).toUpperCase().trim();
 
-    // Standard Cashier payout states
-    if (s == 'APPROVED_2' ||
-        s == 'PENDING_CASHIER' ||
+    // Standard Cashier payout states:
+    // PENDING_CASHIER, APPROVED_2, OWNER_APPROVED, APPROVED_OWNER, APPROVED
+    if (s == 'PENDING_CASHIER' ||
+        s == 'APPROVED_2' ||
         s == 'OWNER_APPROVED' ||
-        s == 'APPROVED_OWNER') {
+        s == 'APPROVED_OWNER' ||
+        s == 'APPROVED' ||
+        s.contains('CASHIER')) {
       return true;
     }
 

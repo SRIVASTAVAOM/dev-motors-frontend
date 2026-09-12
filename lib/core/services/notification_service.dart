@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../utils/safe_parser.dart';
 import '../utils/claim_workflow_engine.dart';
+import 'api_service.dart';
 
 class NotificationService {
   static final Map<String, Set<String>> _dismissedByRole = {
@@ -19,6 +20,11 @@ class NotificationService {
     final List<Map<String, dynamic>> alerts = [];
     final r = role.toUpperCase();
     final dismissed = _dismissedByRole[r] ?? {};
+
+    final effectiveUser = currentUser ?? ApiService.currentUser;
+    final effectiveBranch = userBranch ??
+        (effectiveUser?['location'] is Map ? effectiveUser!['location']['name'] : effectiveUser?['location']) ??
+        effectiveUser?['branch'];
 
     for (var exp in expenses) {
       if (exp is! Map) continue;
@@ -54,7 +60,7 @@ class NotificationService {
       final branch = SafeParser.getString(rawBranch, '');
 
       final creatorRole = ClaimWorkflowEngine.extractCreatorRole(exp);
-      final isMyClaim = currentUser != null && ClaimWorkflowEngine.isClaimCreatedByUser(exp, currentUser);
+      final isMyClaim = effectiveUser != null && ClaimWorkflowEngine.isClaimCreatedByUser(exp, effectiveUser);
 
       if (r == 'MANAGER') {
         if (isMyClaim || creatorRole == 'MANAGER') {
@@ -80,11 +86,11 @@ class NotificationService {
               'time': 'Approved for Payout',
               'expenseId': id,
             });
-          } else if (status == 'PAID' || status.contains('SETTLE') || status.contains('DISBURSE')) {
+          } else if (status == 'PAID' || status.contains('SETTLE') || status.contains('DISBURSE') || ClaimWorkflowEngine.isCashierPaid(id)) {
             alerts.add({
               'id': '${id}_mgr_own_paid',
               'title': 'Your Claim Settled',
-              'message': 'Your claim of ₹$amount has been disbursed/settled.',
+              'message': 'Your claim of ₹$amount has been disbursed/settled by Cashier.',
               'type': 'PAID',
               'unread': true,
               'time': 'Settled',
@@ -96,7 +102,7 @@ class NotificationService {
           if (creatorRole == 'OWNER' || creatorRole == 'CASHIER') continue;
 
           // Branch gating: only notify for claims matching the manager's branch
-          if (userBranch != null && !ClaimWorkflowEngine.matchesBranch(userBranch: userBranch, expenseBranch: branch)) {
+          if (effectiveBranch != null && !ClaimWorkflowEngine.matchesBranch(userBranch: effectiveBranch, expenseBranch: branch, currentUser: effectiveUser)) {
             continue;
           }
 
@@ -111,7 +117,7 @@ class NotificationService {
               'time': 'Needs Action',
               'expenseId': id,
             });
-          } else if (status == 'APPROVED' || status.contains('MANAGER_APPROVED')) {
+          } else if (status == 'PENDING_OWNER' || status == 'APPROVED_1' || status.contains('MANAGER_APPROVED')) {
             alerts.add({
               'id': '${id}_mgr_fwd',
               'title': 'Claim Forwarded: $empName',
@@ -119,6 +125,16 @@ class NotificationService {
               'type': 'APPROVED',
               'unread': false,
               'time': 'In Owner Review',
+              'expenseId': id,
+            });
+          } else if (ClaimWorkflowEngine.isPendingForCashier(status, exp)) {
+            alerts.add({
+              'id': '${id}_mgr_owner_appr',
+              'title': 'Claim Approved by Owner: $empName',
+              'message': '₹$amount for "$title" approved by Owner & sent to Cashier for payout.',
+              'type': 'APPROVED',
+              'unread': false,
+              'time': 'Ready for Payout',
               'expenseId': id,
             });
           } else if (status == 'PAID' || status.contains('SETTLE') || status.contains('DISBURSE') || ClaimWorkflowEngine.isCashierPaid(id)) {
@@ -190,6 +206,16 @@ class NotificationService {
               'time': 'Rejected',
               'expenseId': id,
             });
+          } else if (ClaimWorkflowEngine.isPendingForCashier(status, exp)) {
+            alerts.add({
+              'id': '${id}_csh_own_ready',
+              'title': 'Your Claim Approved by Owner',
+              'message': 'Your claim ₹$amount for "$title" was approved by Owner & ready for cash disbursal.',
+              'type': 'READY_PAYMENT',
+              'unread': true,
+              'time': 'Ready for Disbursal',
+              'expenseId': id,
+            });
           } else if (status == 'PAID' || status.contains('SETTLE') || status.contains('DISBURSE') || ClaimWorkflowEngine.isCashierPaid(id)) {
             alerts.add({
               'id': '${id}_csh_own_paid',
@@ -203,8 +229,9 @@ class NotificationService {
           }
         } else {
           if (ClaimWorkflowEngine.isPendingForCashier(status, exp)) {
-            // Match branch if cashier has branch assigned and is not central
-            if (userBranch != null && !ClaimWorkflowEngine.matchesBranch(userBranch: userBranch, expenseBranch: branch)) {
+            // Match branch if cashier has branch assigned and is not central/senior
+            final isSenior = ClaimWorkflowEngine.isSeniorCashier(effectiveUser);
+            if (!isSenior && effectiveBranch != null && !ClaimWorkflowEngine.matchesBranch(userBranch: effectiveBranch, expenseBranch: branch, currentUser: effectiveUser)) {
               continue;
             }
             alerts.add({
@@ -220,12 +247,12 @@ class NotificationService {
         }
       } else if (r == 'EMPLOYEE') {
         // Employees only receive notifications for their OWN claims
-        if (currentUser != null && !isMyClaim) continue;
+        if (effectiveUser != null && !isMyClaim) continue;
 
         if (status.contains('REJECT')) {
           final reason = ClaimWorkflowEngine.getRejectionRemark(id, exp);
           alerts.add({
-            'id': id,
+            'id': '${id}_emp_rej',
             'title': 'Claim Rejected',
             'message': 'Claim ₹$amount was Rejected: $reason',
             'type': 'REJECTED',
@@ -236,21 +263,31 @@ class NotificationService {
         } else if (status == 'PAID' || status.contains('SETTLE') || status.contains('DISBURSE') || ClaimWorkflowEngine.isCashierPaid(id)) {
           alerts.add({
             'id': '${id}_emp_paid',
-            'title': 'Claim Disbursed & Settled',
+            'title': 'Claim Disbursed & Settled 🎉',
             'message': 'Your claim of ₹$amount for "$title" has been disbursed by Cashier.',
             'type': 'PAID',
             'unread': true,
             'time': 'Disbursed',
             'expenseId': id,
           });
-        } else if (status.contains('APPROVED')) {
+        } else if (ClaimWorkflowEngine.isPendingForCashier(status, exp)) {
           alerts.add({
-            'id': id,
-            'title': 'Claim Approved',
-            'message': 'Your claim of ₹$amount for "$title" was accepted and forwarded.',
+            'id': '${id}_emp_owner_appr',
+            'title': 'Claim Approved by Owner',
+            'message': 'Your claim of ₹$amount for "$title" was approved by Owner and sent to Cashier for payment disbursal.',
             'type': 'APPROVED',
             'unread': true,
-            'time': 'In-Review',
+            'time': 'Approved for Payout',
+            'expenseId': id,
+          });
+        } else if (status == 'PENDING_OWNER' || status == 'APPROVED_1' || status.contains('MANAGER_APPROVED') || status.contains('APPROVED')) {
+          alerts.add({
+            'id': '${id}_emp_mgr_appr',
+            'title': 'Claim Approved by Manager',
+            'message': 'Your claim of ₹$amount for "$title" was approved by Manager and forwarded to Owner for final approval.',
+            'type': 'APPROVED',
+            'unread': true,
+            'time': 'In Owner Review',
             'expenseId': id,
           });
         }
@@ -265,16 +302,33 @@ class NotificationService {
     _dismissedByRole[r]!.add(notifId);
   }
 
-  static void clearAllForRole(String role, List<dynamic> expenses) {
+  static void clearAllForRole(
+    String role,
+    List<dynamic> expenses, {
+    Map<String, dynamic>? currentUser,
+    dynamic userBranch,
+  }) {
     final r = role.toUpperCase();
-    final current = getNotificationsForRole(r, expenses);
+    final current = getNotificationsForRole(
+      r,
+      expenses,
+      currentUser: currentUser,
+      userBranch: userBranch,
+    );
     _dismissedByRole.putIfAbsent(r, () => <String>{});
     for (var n in current) {
       _dismissedByRole[r]!.add(n['id'].toString());
     }
   }
 
-  static void showNotificationSheet(BuildContext context, String role, List<dynamic> expenses, VoidCallback onRefresh) {
+  static void showNotificationSheet(
+    BuildContext context,
+    String role,
+    List<dynamic> expenses,
+    VoidCallback onRefresh, {
+    Map<String, dynamic>? currentUser,
+    dynamic userBranch,
+  }) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
@@ -282,7 +336,12 @@ class NotificationService {
       builder: (ctx) {
         return StatefulBuilder(
           builder: (modalCtx, setModalState) {
-            final notifs = getNotificationsForRole(role, expenses);
+            final notifs = getNotificationsForRole(
+              role,
+              expenses,
+              currentUser: currentUser,
+              userBranch: userBranch,
+            );
 
             return Container(
               padding: const EdgeInsets.all(20),

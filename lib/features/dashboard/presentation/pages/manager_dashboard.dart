@@ -60,7 +60,7 @@ class _ManagerDashboardState extends State<ManagerDashboard> {
     try {
       await ApiService.processApproval(
         expenseId: id,
-        action: action,
+        action: action == 'APPROVE' ? 'APPROVED_1' : action,
         remarks: reason,
         comments: reason,
       );
@@ -288,7 +288,14 @@ class _ManagerDashboardState extends State<ManagerDashboard> {
                         IconButton(
                           tooltip: "Notifications",
                           icon: const Icon(Icons.notifications_none, color: Colors.grey),
-                          onPressed: () => NotificationService.showNotificationSheet(context, 'MANAGER', _expenses, () => setState(() {})),
+                          onPressed: () => NotificationService.showNotificationSheet(
+                            context,
+                            'MANAGER',
+                            _expenses,
+                            () => setState(() {}),
+                            currentUser: _profile ?? ApiService.currentUser,
+                            userBranch: userBranch,
+                          ),
                         ),
                         if (notifs.isNotEmpty)
                           Positioned(

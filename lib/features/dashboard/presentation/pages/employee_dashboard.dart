@@ -147,7 +147,14 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
                         IconButton(
                           tooltip: "Notifications",
                           icon: const Icon(Icons.notifications_none, color: Colors.grey),
-                          onPressed: () => NotificationService.showNotificationSheet(context, 'EMPLOYEE', _myOwnExpenses, () => setState(() {})),
+                          onPressed: () => NotificationService.showNotificationSheet(
+                            context,
+                            'EMPLOYEE',
+                            _myOwnExpenses,
+                            () => setState(() {}),
+                            currentUser: _profile ?? ApiService.currentUser,
+                            userBranch: userBranch,
+                          ),
                         ),
                         if (notifs.isNotEmpty)
                           Positioned(

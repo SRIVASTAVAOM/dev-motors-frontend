@@ -64,7 +64,7 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
     }
     await ApiService.processApproval(
       expenseId: id,
-      action: action,
+      action: action == 'APPROVE' ? 'APPROVED_2' : action,
       approvedAmount: finalAmt,
       comments: reason,
       remarks: reason,
@@ -230,7 +230,14 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
                         IconButton(
                           tooltip: "Notifications",
                           icon: const Icon(Icons.notifications_none, color: Colors.grey),
-                          onPressed: () => NotificationService.showNotificationSheet(context, 'OWNER', _expenses, () => setState(() {})),
+                          onPressed: () => NotificationService.showNotificationSheet(
+                            context,
+                            'OWNER',
+                            _expenses,
+                            () => setState(() {}),
+                            currentUser: _profile ?? ApiService.currentUser,
+                            userBranch: userBranch,
+                          ),
                         ),
                         if (notifs.isNotEmpty)
                           Positioned(

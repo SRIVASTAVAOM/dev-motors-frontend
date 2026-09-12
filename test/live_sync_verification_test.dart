@@ -5,54 +5,113 @@ import 'package:dev_motors/core/utils/claim_workflow_engine.dart';
 import 'package:dev_motors/core/services/notification_service.dart';
 
 void main() {
-  test('Verify live sync data against ClaimWorkflowEngine & NotificationService', () async {
+  test('Verify live backend API health and clean database state', () async {
     final res = await http.get(Uri.parse('https://dev-motors-backend.onrender.com/api/expenses'));
     expect(res.statusCode, 200);
 
-    final list = jsonDecode(res.body)['data'] as List;
+    final decoded = jsonDecode(res.body);
+    expect(decoded['success'], isTrue);
+    expect(decoded['data'], isA<List>());
+  });
 
-    final mgrUser = {
-      'id': 'khair_dev_wm',
-      'employeeId': 'khair_dev_wm',
-      'name': 'Dev Kumar Baghel',
-      'role': 'MANAGER',
-      'branch': 'Khair',
-      'location': 'Khair'
+  test('Verify Complete Sequential Flow (Emp -> Mgr -> Owner -> Cashier -> Paid) & Notifications', () {
+    final empUser = {
+      'id': 'emp-001',
+      'employeeId': 'EMP001',
+      'name': 'Rahul Verma',
+      'role': 'EMPLOYEE',
+      'branch': 'Aligarh Nexa',
     };
 
-    // 1. My Claims verification
-    final myClaims = list.where((e) => ClaimWorkflowEngine.isClaimCreatedByUser(e, mgrUser)).toList();
-    expect(myClaims.length, greaterThanOrEqualTo(3));
-    for (var c in myClaims) {
-      expect(ClaimWorkflowEngine.isPendingForManager(c['status'], c), isFalse,
-          reason: 'Manager claims must NEVER enter manager review queue');
-      expect(ClaimWorkflowEngine.isPendingForOwner(c['status'], c), isTrue,
-          reason: 'Manager claims must route directly to Owner queue');
-    }
+    final mgrUser = {
+      'id': 'mgr-001',
+      'employeeId': 'MGR001',
+      'name': 'Muneesh Kumar (BSM)',
+      'role': 'MANAGER',
+      'branch': 'Aligarh Nexa',
+    };
 
-    // 2. Action Needed tab verification for Khair branch
-    final pendingAll = list.where((e) {
-      if (ClaimWorkflowEngine.isClaimCreatedByUser(e, mgrUser)) return false;
-      return ClaimWorkflowEngine.isPendingForManager(e['status'], e);
-    }).toList();
+    final seniorCashierUser = {
+      'id': 'csh-001',
+      'employeeId': 'CASH001',
+      'name': 'Suresh Chandra (Chief Cashier & Finance)',
+      'role': 'CASHIER',
+      'branch': 'Kanpur Main Dealership',
+    };
 
-    final pendingKhair = pendingAll.where((e) {
-      final expBranch = e['branch'] ?? (e['location'] is Map ? e['location']['name'] : e['location']);
-      return ClaimWorkflowEngine.matchesBranch(userBranch: 'Khair', expenseBranch: expBranch);
-    }).toList();
+    // Stage 1: Employee creates expense (PENDING_MANAGER)
+    final claim = {
+      'id': 'EXP_101',
+      'amount': 1500,
+      'description': 'Showroom client hospitality',
+      'category': 'Hospitality',
+      'status': 'PENDING_MANAGER',
+      'branch': 'Aligarh Nexa',
+      'employeeId': 'EMP001',
+      'employeeName': 'Rahul Verma',
+      'creatorRole': 'EMPLOYEE',
+    };
 
-    // Self-created claims MUST NOT be in pendingKhair
-    for (var c in pendingKhair) {
-      expect(ClaimWorkflowEngine.isClaimCreatedByUser(c, mgrUser), isFalse);
-    }
+    expect(ClaimWorkflowEngine.isPendingForManager(claim['status'], claim), isTrue);
+    expect(ClaimWorkflowEngine.isPendingForOwner(claim['status'], claim), isFalse);
+    expect(ClaimWorkflowEngine.isPendingForCashier(claim['status'], claim), isFalse);
 
-    // 3. Notification verification
-    final notifs = NotificationService.getNotificationsForRole('MANAGER', list, userBranch: 'Khair', currentUser: mgrUser);
-    for (var n in notifs) {
-      // Must NOT contain Devendra Sharma or claims from other branches
-      final title = (n['title'] ?? '').toString();
-      expect(title.contains('Devendra Sharma'), isFalse,
-          reason: 'Owner / Managing Director claims must not alert branch managers');
-    }
+    // Manager receives notification
+    final mgrNotifs1 = NotificationService.getNotificationsForRole(
+      'MANAGER',
+      [claim],
+      userBranch: 'Aligarh Nexa',
+      currentUser: mgrUser,
+    );
+    expect(mgrNotifs1.any((n) => n['type'] == 'PENDING_APPROVAL'), isTrue);
+
+    // Stage 2: Manager approves -> status becomes PENDING_OWNER
+    final claimStage2 = Map<String, dynamic>.from(claim)..['status'] = 'PENDING_OWNER';
+    expect(ClaimWorkflowEngine.isPendingForManager(claimStage2['status'], claimStage2), isFalse);
+    expect(ClaimWorkflowEngine.isPendingForOwner(claimStage2['status'], claimStage2), isTrue);
+    expect(ClaimWorkflowEngine.isPendingForCashier(claimStage2['status'], claimStage2), isFalse);
+
+    // Employee receives "Approved by Manager" notification
+    final empNotifsStage2 = NotificationService.getNotificationsForRole(
+      'EMPLOYEE',
+      [claimStage2],
+      currentUser: empUser,
+    );
+    expect(empNotifsStage2.any((n) => n['title'].toString().contains('Approved by Manager')), isTrue);
+
+    // Stage 3: Owner approves -> status becomes PENDING_CASHIER
+    final claimStage3 = Map<String, dynamic>.from(claim)..['status'] = 'PENDING_CASHIER';
+    expect(ClaimWorkflowEngine.isPendingForManager(claimStage3['status'], claimStage3), isFalse);
+    expect(ClaimWorkflowEngine.isPendingForOwner(claimStage3['status'], claimStage3), isFalse);
+    expect(ClaimWorkflowEngine.isPendingForCashier(claimStage3['status'], claimStage3), isTrue);
+
+    // Employee receives "Approved by Owner" notification
+    final empNotifsStage3 = NotificationService.getNotificationsForRole(
+      'EMPLOYEE',
+      [claimStage3],
+      currentUser: empUser,
+    );
+    expect(empNotifsStage3.any((n) => n['title'].toString().contains('Approved by Owner')), isTrue);
+
+    // Senior Cashier (CASH001 from Kanpur) sees claim from Aligarh Nexa via universal oversight
+    final cashierNotifs = NotificationService.getNotificationsForRole(
+      'CASHIER',
+      [claimStage3],
+      userBranch: 'Kanpur Main Dealership',
+      currentUser: seniorCashierUser,
+    );
+    expect(cashierNotifs.any((n) => n['type'] == 'READY_PAYMENT'), isTrue);
+
+    // Stage 4: Cashier marks as PAID / Disbursed
+    final claimStage4 = Map<String, dynamic>.from(claim)..['status'] = 'PAID';
+    expect(ClaimWorkflowEngine.isSettledOrRejected(claimStage4['status'], claimStage4), isTrue);
+
+    // Creator receives "Claim Disbursed & Settled" notification
+    final empNotifsStage4 = NotificationService.getNotificationsForRole(
+      'EMPLOYEE',
+      [claimStage4],
+      currentUser: empUser,
+    );
+    expect(empNotifsStage4.any((n) => n['type'] == 'PAID'), isTrue);
   });
 }

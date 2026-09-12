@@ -300,14 +300,25 @@ class ApiService {
     final finalAmount = approvedAmount ?? newAmount;
     final finalComments = comments ?? remarks;
 
-    String backendAction = 'APPROVE';
+    String backendAction = action;
     final act = action.toUpperCase();
     if (act.contains('REJECT')) {
       backendAction = 'REJECT';
-    } else if (act.contains('PAY') || act.contains('DISBURSE')) {
+    } else if (act.contains('PAY') || act.contains('DISBURSE') || act.contains('SETTLE')) {
       backendAction = 'PAY';
+    } else if (act.contains('APPROVED_1') || act.contains('LEVEL_1')) {
+      backendAction = 'APPROVED_1';
+    } else if (act.contains('APPROVED_2') || act.contains('LEVEL_2')) {
+      backendAction = 'APPROVED_2';
     } else {
-      backendAction = 'APPROVE';
+      final role = (_currentUser?['role'] ?? '').toString().toUpperCase();
+      if (role == 'MANAGER') {
+        backendAction = 'APPROVED_1';
+      } else if (role == 'OWNER') {
+        backendAction = 'APPROVED_2';
+      } else {
+        backendAction = 'APPROVE';
+      }
     }
 
     final body = jsonEncode({
