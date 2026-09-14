@@ -15,15 +15,16 @@ class _AddStaffDialogState extends State<AddStaffDialog> {
   final _passCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
   String _selectedRole = 'EMPLOYEE';
-  String _selectedBranch = 'Aligarh';
+  String _selectedBranch = 'Aligarh Nexa';
   bool _loading = false;
 
   final List<String> _roles = ['EMPLOYEE', 'MANAGER', 'CASHIER', 'OWNER'];
   final List<String> _branches = [
-    'Aligarh', 'Agra', 'Kanpur', 'Lucknow', 'Delhi', 'Noida',
-    'Ghaziabad', 'Meerut', 'Bareilly', 'Moradabad', 'Prayagraj',
-    'Varanasi', 'Gorakhpur', 'Mathura', 'Jhansi', 'Firozabad',
-    'Etawah', 'Unnao'
+    'Aligarh Nexa',
+    'Main Outlet',
+    'Khair',
+    'Atrauli',
+    'Iglas',
   ];
 
   void _submit() async {
@@ -117,7 +118,7 @@ class _AddStaffDialogState extends State<AddStaffDialog> {
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
               ),
               items: _branches.map((b) => DropdownMenuItem(value: b, child: Text(b))).toList(),
-              onChanged: (v) => setState(() => _selectedBranch = v ?? 'Aligarh'),
+              onChanged: (v) => setState(() => _selectedBranch = v ?? 'Aligarh Nexa'),
             ),
             const SizedBox(height: 12),
             TextField(
