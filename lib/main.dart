@@ -8,8 +8,11 @@ import 'features/dashboard/presentation/pages/cashier_dashboard.dart';
 import 'features/dashboard/presentation/pages/owner_dashboard.dart';
 import 'features/auth/presentation/providers/auth_provider.dart';
 
+import 'core/services/notification_service.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await NotificationService.init();
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,

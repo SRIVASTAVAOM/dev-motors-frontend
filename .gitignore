@@ -48,3 +48,6 @@ app.*.map.json
 backend/
 .vercel
 .env*
+key.properties
+*.jks
+*.keystore

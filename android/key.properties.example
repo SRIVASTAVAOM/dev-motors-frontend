@@ -1,0 +1,6 @@
+# Google Play Upload Keystore Configuration
+# Keep this file and your .jks keystore safe and never commit them to git!
+storePassword=your_store_password
+keyPassword=your_key_password
+keyAlias=upload
+storeFile=upload-keystore.jks
