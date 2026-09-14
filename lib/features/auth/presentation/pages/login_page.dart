@@ -17,74 +17,6 @@ class _LoginPageState extends State<LoginPage> {
   final _passController = TextEditingController();
   bool _obscurePassword = true;
   bool _isLoading = false;
-  String? _selectedDemoRole;
-
-  final List<Map<String, dynamic>> _demoRoles = [
-    {
-      'role': 'OWNER',
-      'label': 'Owner',
-      'name': 'Devendra Sharma',
-      'empId': 'owner_dev_director',
-      'icon': Icons.admin_panel_settings_rounded,
-      'color': const Color(0xff7C3AED),
-      'bgColor': const Color(0xffF5F3FF),
-      'borderColor': const Color(0xffDDD6FE),
-    },
-    {
-      'role': 'MANAGER',
-      'label': 'Manager',
-      'name': 'Arman (GM)',
-      'empId': 'main_arman_gm',
-      'icon': Icons.business_center_rounded,
-      'color': const Color(0xff1D4ED8),
-      'bgColor': const Color(0xffEFF6FF),
-      'borderColor': const Color(0xffBFDBFE),
-    },
-    {
-      'role': 'CASHIER',
-      'label': 'Cashier',
-      'name': 'Rakesh (Cashier)',
-      'empId': 'main_rakesh_cashier',
-      'icon': Icons.account_balance_wallet_rounded,
-      'color': const Color(0xff059669),
-      'bgColor': const Color(0xffECFDF5),
-      'borderColor': const Color(0xffA7F3D0),
-    },
-    {
-      'role': 'EMPLOYEE',
-      'label': 'Employee',
-      'name': 'Muneesh (BSM)',
-      'empId': 'nexa_muneesh_bsm',
-      'icon': Icons.person_rounded,
-      'color': const Color(0xff0284C7),
-      'bgColor': const Color(0xffF0F9FF),
-      'borderColor': const Color(0xffBAE6FD),
-    },
-  ];
-
-  void _selectDemoRole(Map<String, dynamic> demo) {
-    setState(() {
-      _selectedDemoRole = demo['role'];
-      _idController.text = demo['empId'];
-      _passController.text = 'password123';
-    });
-    ScaffoldMessenger.of(context).removeCurrentSnackBar();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(demo['icon'] as IconData, color: Colors.white, size: 18),
-            const SizedBox(width: 8),
-            Text("${demo['label']} credentials loaded (${demo['name']})"),
-          ],
-        ),
-        backgroundColor: demo['color'] as Color,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
 
   void _routeByRole(String role) {
     final r = role;
@@ -238,7 +170,7 @@ class _LoginPageState extends State<LoginPage> {
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
             child: Container(
-              constraints: const BoxConstraints(maxWidth: 440),
+              constraints: const BoxConstraints(maxWidth: 420),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -292,35 +224,7 @@ class _LoginPageState extends State<LoginPage> {
                       color: Color(0xff2563EB),
                     ),
                   ),
-                  const SizedBox(height: 8),
-
-                  // --- MULTI-BRANCH PILL BADGE ---
-                  Center(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: const Color(0xffEFF6FF),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: const Color(0xffBFDBFE)),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.hub_outlined, size: 13, color: Color(0xff2563EB)),
-                          SizedBox(width: 6),
-                          Text(
-                            "Aligarh • Khair • Atrauli • Iglas",
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xff1E40AF),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 32),
 
                   // --- MAIN LOGIN CARD ---
                   Container(
@@ -340,97 +244,6 @@ class _LoginPageState extends State<LoginPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // --- 1-TAP QUICK ROLE ACCESS BAR ---
-                        Row(
-                          children: [
-                            const Icon(Icons.bolt_rounded, size: 16, color: Color(0xffD97706)),
-                            const SizedBox(width: 6),
-                            const Text(
-                              "QUICK ROLE ACCESS (DEMO)",
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.6,
-                                color: Color(0xff64748B),
-                              ),
-                            ),
-                            const Spacer(),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: const Color(0xffF1F5F9),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: const Text(
-                                "1-Tap",
-                                style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xff475569)),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-
-                        // Role Selector Chips
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: _demoRoles.map((demo) {
-                            final isSelected = _selectedDemoRole == demo['role'];
-                            return InkWell(
-                              onTap: () => _selectDemoRole(demo),
-                              borderRadius: BorderRadius.circular(12),
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 200),
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-                                decoration: BoxDecoration(
-                                  color: isSelected ? (demo['color'] as Color).withValues(alpha: 0.12) : (demo['bgColor'] as Color),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: isSelected ? (demo['color'] as Color) : (demo['borderColor'] as Color),
-                                    width: isSelected ? 1.8 : 1.0,
-                                  ),
-                                  boxShadow: isSelected
-                                      ? [
-                                          BoxShadow(
-                                            color: (demo['color'] as Color).withValues(alpha: 0.2),
-                                            blurRadius: 8,
-                                            offset: const Offset(0, 2),
-                                          )
-                                        ]
-                                      : null,
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      demo['icon'] as IconData,
-                                      size: 14,
-                                      color: demo['color'] as Color,
-                                    ),
-                                    const SizedBox(width: 5),
-                                    Text(
-                                      demo['label'] as String,
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                                        color: demo['color'] as Color,
-                                      ),
-                                    ),
-                                    if (isSelected) ...[
-                                      const SizedBox(width: 4),
-                                      Icon(Icons.check_circle_rounded, size: 12, color: demo['color'] as Color),
-                                    ],
-                                  ],
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                        const SizedBox(height: 20),
-
-                        const Divider(height: 1, color: Color(0xffF1F5F9)),
-                        const SizedBox(height: 20),
-
                         // Employee ID Label & Input
                         const Text(
                           "Employee ID",
@@ -441,7 +254,7 @@ class _LoginPageState extends State<LoginPage> {
                           controller: _idController,
                           textInputAction: TextInputAction.next,
                           decoration: InputDecoration(
-                            hintText: "e.g. owner_dev_director",
+                            hintText: "Enter your Employee ID",
                             hintStyle: const TextStyle(color: Color(0xff94A3B8), fontSize: 13),
                             prefixIcon: const Icon(Icons.badge_outlined, size: 20, color: Color(0xff64748B)),
                             filled: true,
@@ -541,26 +354,6 @@ class _LoginPageState extends State<LoginPage> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 24),
-
-                  // --- ENTERPRISE SECURITY FOOTER ---
-                  const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.shield_outlined, size: 14, color: Color(0xff64748B)),
-                      SizedBox(width: 6),
-                      Text(
-                        "256-Bit TLS Secured • Enterprise Governance Portal",
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xff64748B)),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  const Text(
-                    "Authorized Personnel Only • Dev Motors Management System",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 10, color: Color(0xff94A3B8)),
-                  ),
                 ],
               ),
             ),
@@ -570,4 +363,5 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 }
+
 

@@ -15,59 +15,6 @@ class _LoginFormState extends State<LoginForm> {
   bool _isLoading = false;
   bool _obscurePassword = true;
   String? _errorMessage;
-  String? _selectedDemoRole;
-
-  final List<Map<String, dynamic>> _demoRoles = [
-    {
-      'role': 'OWNER',
-      'label': 'Owner',
-      'name': 'Devendra Sharma',
-      'empId': 'owner_dev_director',
-      'icon': Icons.admin_panel_settings_rounded,
-      'color': const Color(0xff7C3AED),
-      'bgColor': const Color(0xffF5F3FF),
-      'borderColor': const Color(0xffDDD6FE),
-    },
-    {
-      'role': 'MANAGER',
-      'label': 'Manager',
-      'name': 'Arman (GM)',
-      'empId': 'main_arman_gm',
-      'icon': Icons.business_center_rounded,
-      'color': const Color(0xff1D4ED8),
-      'bgColor': const Color(0xffEFF6FF),
-      'borderColor': const Color(0xffBFDBFE),
-    },
-    {
-      'role': 'CASHIER',
-      'label': 'Cashier',
-      'name': 'Rakesh (Cashier)',
-      'empId': 'main_rakesh_cashier',
-      'icon': Icons.account_balance_wallet_rounded,
-      'color': const Color(0xff059669),
-      'bgColor': const Color(0xffECFDF5),
-      'borderColor': const Color(0xffA7F3D0),
-    },
-    {
-      'role': 'EMPLOYEE',
-      'label': 'Employee',
-      'name': 'Muneesh (BSM)',
-      'empId': 'nexa_muneesh_bsm',
-      'icon': Icons.person_rounded,
-      'color': const Color(0xff0284C7),
-      'bgColor': const Color(0xffF0F9FF),
-      'borderColor': const Color(0xffBAE6FD),
-    },
-  ];
-
-  void _selectDemoRole(Map<String, dynamic> demo) {
-    setState(() {
-      _selectedDemoRole = demo['role'];
-      _employeeIdController.text = demo['empId'];
-      _passwordController.text = 'password123';
-      _errorMessage = null;
-    });
-  }
 
   Future<void> _handleLogin() async {
     final empId = _employeeIdController.text.trim();
@@ -143,72 +90,6 @@ class _LoginFormState extends State<LoginForm> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Quick Role Bar
-          Row(
-            children: [
-              const Icon(Icons.bolt_rounded, size: 16, color: Color(0xffD97706)),
-              const SizedBox(width: 6),
-              const Text(
-                "QUICK ROLE ACCESS (DEMO)",
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.6, color: Color(0xff64748B)),
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(color: const Color(0xffF1F5F9), borderRadius: BorderRadius.circular(6)),
-                child: const Text("1-Tap", style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xff475569))),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-
-          // Role Selector Chips
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _demoRoles.map((demo) {
-              final isSelected = _selectedDemoRole == demo['role'];
-              return InkWell(
-                onTap: () => _selectDemoRole(demo),
-                borderRadius: BorderRadius.circular(12),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-                  decoration: BoxDecoration(
-                    color: isSelected ? (demo['color'] as Color).withValues(alpha: 0.12) : (demo['bgColor'] as Color),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isSelected ? (demo['color'] as Color) : (demo['borderColor'] as Color),
-                      width: isSelected ? 1.8 : 1.0,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(demo['icon'] as IconData, size: 14, color: demo['color'] as Color),
-                      const SizedBox(width: 5),
-                      Text(
-                        demo['label'] as String,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                          color: demo['color'] as Color,
-                        ),
-                      ),
-                      if (isSelected) ...[
-                        const SizedBox(width: 4),
-                        Icon(Icons.check_circle_rounded, size: 12, color: demo['color'] as Color),
-                      ],
-                    ],
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 18),
-          const Divider(height: 1, color: Color(0xffF1F5F9)),
-          const SizedBox(height: 18),
-
           if (_errorMessage != null)
             Container(
               padding: const EdgeInsets.all(12),
@@ -238,7 +119,7 @@ class _LoginFormState extends State<LoginForm> {
             controller: _employeeIdController,
             textInputAction: TextInputAction.next,
             decoration: InputDecoration(
-              hintText: 'e.g. owner_dev_director',
+              hintText: 'Enter your Employee ID',
               hintStyle: const TextStyle(color: Color(0xff94A3B8), fontSize: 13),
               prefixIcon: const Icon(Icons.badge_outlined, size: 20, color: Color(0xff64748B)),
               filled: true,
@@ -317,4 +198,5 @@ class _LoginFormState extends State<LoginForm> {
     );
   }
 }
+
 
