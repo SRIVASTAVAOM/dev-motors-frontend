@@ -6,6 +6,7 @@ import '../../../../core/utils/safe_parser.dart';
 import '../../../expenses/presentation/widgets/approval_stepper.dart';
 import '../../../expenses/presentation/widgets/receipt_viewer_dialog.dart';
 import '../../../profile/presentation/widgets/profile_sheet.dart';
+import '../../../profile/presentation/widgets/change_password_dialog.dart';
 import '../../../reports/presentation/pages/reports_page.dart';
 import '../widgets/add_expense_dialog.dart';
 import '../widgets/edit_expense_dialog.dart';
@@ -24,6 +25,7 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
   bool _isLoading = true;
   List<dynamic> _expenses = [];
   Map<String, dynamic>? _profile;
+  List<Map<String, dynamic>> _serverNotifs = [];
 
   @override
   void initState() {
@@ -38,6 +40,7 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
     try {
       final list = await ApiService.getExpenses();
       _profile = ApiService.currentUser;
+      _serverNotifs = await ApiService.getNotifications();
 
       setState(() {
         _expenses = List<dynamic>.from(list);
@@ -47,6 +50,7 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
       if (mounted) setState(() => _isLoading = false);
     }
   }
+
 
   Future<void> _deleteExpense(String id) async {
     final ok = await ApiService.deleteExpense(id);
@@ -84,7 +88,7 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
     }
 
     final userName = _getString(_profile?['name'], "Staff Member");
-    final userDesignation = _getString(_profile?['designation'], "Operations Staff");
+    final userOccupation = _getString(_profile?['designation'], "Operations Staff");
     final userBranch = _profile?['location'] != null && _profile?['location'] is Map 
         ? _getString(_profile?['location']['name'], "Main Outlet") 
         : _getString(_profile?['branch'], "Main Outlet");
@@ -94,6 +98,7 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
       _myOwnExpenses,
       userBranch: userBranch,
       currentUser: _profile ?? ApiService.currentUser,
+      serverNotifications: _serverNotifs,
     );
     final currentList = _selectedTab == 0 ? _activeList : _historyList;
 
@@ -108,7 +113,6 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // User Header with Branch & Designation
                 Row(
                   children: [
                     const CircleAvatar(
@@ -120,30 +124,71 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Row(
+                          Text(
+                            userName,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 16,
+                              color: Color(0xff0F172A),
+                              letterSpacing: -0.2,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 4,
+                            crossAxisAlignment: WrapCrossAlignment.center,
                             children: [
-                              Flexible(
-                                child: Text(
-                                  userName,
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                                  overflow: TextOverflow.ellipsis,
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xffEFF6FF),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: const Color(0xffBFDBFE), width: 0.8),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.badge_outlined, size: 11, color: Color(0xff2563EB)),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      userOccupation,
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: Color(0xff2563EB),
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                              const SizedBox(width: 8),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(color: const Color(0xffEFF6FF), borderRadius: BorderRadius.circular(6)),
-                                child: Text(userDesignation, style: const TextStyle(fontSize: 10, color: Color(0xff2563EB), fontWeight: FontWeight.bold)),
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xffF1F5F9),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: const Color(0xffE2E8F0), width: 0.8),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.location_on_outlined, size: 11, color: Color(0xff64748B)),
+                                    const SizedBox(width: 3),
+                                    Text(
+                                      userBranch,
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: Color(0xff475569),
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ],
-                          ),
-                          const SizedBox(height: 2),
-                          Row(
-                            children: [
-                              const Icon(Icons.location_on_outlined, size: 13, color: Colors.grey),
-                              const SizedBox(width: 3),
-                              Text(userBranch, style: const TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w500)),
                             ],
                           ),
                         ],
@@ -161,6 +206,7 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
                             () => setState(() {}),
                             currentUser: _profile ?? ApiService.currentUser,
                             userBranch: userBranch,
+                            serverNotifications: _serverNotifs,
                           ),
                         ),
                         if (notifs.isNotEmpty)
@@ -175,19 +221,79 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
                           ),
                       ],
                     ),
-                    IconButton(tooltip: "Refresh", icon: const Icon(Icons.refresh, color: Colors.grey), onPressed: _loadData),
-                    IconButton(
-                      tooltip: "Profile",
-                      icon: const Icon(Icons.person_outline, color: Colors.grey),
-                      onPressed: () => showModalBottomSheet(
-                        context: context,
-                        isScrollControlled: true,
-                        backgroundColor: Colors.transparent,
-                        builder: (_) => const ProfileSheet(),
-                      ),
+                    PopupMenuButton<String>(
+                      icon: const Icon(Icons.more_vert, color: Color(0xff64748B)),
+                      tooltip: "More Options",
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      onSelected: (val) {
+                        if (val == 'new_claim') {
+                          showDialog(
+                            context: context,
+                            builder: (_) => AddExpenseDialog(onCreated: _loadData),
+                          );
+                        } else if (val == 'change_password') {
+                          showDialog(
+                            context: context,
+                            builder: (_) => const ChangePasswordDialog(),
+                          );
+                        } else if (val == 'refresh') {
+                          _loadData();
+                        } else if (val == 'profile') {
+                          showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            backgroundColor: Colors.transparent,
+                            builder: (_) => const ProfileSheet(),
+                          );
+                        }
+                      },
+                      itemBuilder: (ctx) => [
+                        const PopupMenuItem(
+                          value: 'new_claim',
+                          child: Row(
+                            children: [
+                              Icon(Icons.add_circle_outline, color: Color(0xff2563EB), size: 18),
+                              SizedBox(width: 10),
+                              Expanded(child: Text('Submit Claim', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13))),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuDivider(),
+                        const PopupMenuItem(
+                          value: 'change_password',
+                          child: Row(
+                            children: [
+                              Icon(Icons.vpn_key_outlined, color: Color(0xff64748B), size: 18),
+                              SizedBox(width: 10),
+                              Expanded(child: Text('Change Password', style: TextStyle(fontSize: 13))),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuItem(
+                          value: 'refresh',
+                          child: Row(
+                            children: [
+                              Icon(Icons.refresh, color: Color(0xff64748B), size: 18),
+                              SizedBox(width: 10),
+                              Expanded(child: Text('Refresh Data', style: TextStyle(fontSize: 13))),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuItem(
+                          value: 'profile',
+                          child: Row(
+                            children: [
+                              Icon(Icons.person_outline, color: Color(0xff64748B), size: 18),
+                              SizedBox(width: 10),
+                              Expanded(child: Text('My Profile', style: TextStyle(fontSize: 13))),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
+
                 const SizedBox(height: 20),
 
                 // 2-Tab Queue Switcher

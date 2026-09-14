@@ -42,11 +42,14 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
 
   double _getDouble(dynamic val) => double.tryParse(val?.toString() ?? '0') ?? 0.0;
 
+  List<Map<String, dynamic>> _serverNotifs = [];
+
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
     try {
       final list = await ApiService.getExpenses();
       _profile = ApiService.currentUser;
+      _serverNotifs = await ApiService.getNotifications();
 
       setState(() {
         _expenses = List<dynamic>.from(list);
@@ -108,35 +111,58 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
           children: [
             Icon(Icons.cancel_outlined, color: Colors.red, size: 22),
             SizedBox(width: 8),
-            Text("Reject Claim", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            Text("Reject Expense Claim", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text("Specify why this claim is being rejected:", style: TextStyle(fontSize: 13, color: Colors.grey)),
-            const SizedBox(height: 10),
+            const Text(
+              "Please state the business reason for rejecting this claim. The employee will be notified immediately.",
+              style: TextStyle(fontSize: 13, color: Colors.black87),
+            ),
+            const SizedBox(height: 12),
             TextField(
               controller: reasonController,
-              maxLines: 2,
+              maxLines: 3,
+              autofocus: true,
               decoration: InputDecoration(
-                hintText: "e.g. Bill verification failed / Disallowed expense",
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                hintText: "Enter rejection reason (e.g. invalid bill date, exceeds policy limit...)",
+                hintStyle: const TextStyle(fontSize: 12, color: Colors.grey),
+                filled: true,
+                fillColor: const Color(0xffF8FAFC),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: Color(0xffCBD5E1)),
+                ),
               ),
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
+          ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
             onPressed: () {
               final reason = reasonController.text.trim();
+              if (reason.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Please provide a reason for rejection")),
+                );
+                return;
+              }
               Navigator.pop(ctx);
-              _processApproval(id, 'REJECT', reason: reason.isNotEmpty ? reason : 'Policy criteria not met');
+              _processApproval(id, 'REJECTED', reason: reason);
             },
-            child: const Text("Confirm Reject"),
+            child: const Text("Confirm Rejection", style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -146,7 +172,7 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
   Future<void> _deleteExpense(String id) async {
     final ok = await ApiService.deleteExpense(id);
     if (ok) {
-      _loadData();
+      await _loadData();
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Claim deleted!")));
     }
   }
@@ -170,12 +196,13 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
       _expenses,
       userBranch: _profile?['branch'],
       currentUser: _profile ?? ApiService.currentUser,
+      serverNotifications: _serverNotifs,
     );
     final currentList = _selectedTab == 0 ? _reviewQueue : _allClaims;
 
-    final userName = _getString(_profile?['name'], "Owner");
-    final userDesignation = _getString(_profile?['designation'], "Managing Director");
-    final userBranch = _getString(_profile?['branch'], "All Branches Oversight");
+    final userName = _getString(_profile?['name'], "Dev Motors");
+    final userOccupation = _getString(_profile?['designation'], "Managing Director / Owner");
+    final userBranch = _getString(_profile?['branch'], "All Dealerships Oversight");
 
     return Scaffold(
       backgroundColor: const Color(0xffF8FAFC),
@@ -199,30 +226,71 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Row(
+                          Text(
+                            userName,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 16,
+                              color: Color(0xff0F172A),
+                              letterSpacing: -0.2,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 4,
+                            crossAxisAlignment: WrapCrossAlignment.center,
                             children: [
-                              Flexible(
-                                child: Text(
-                                  userName,
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                                  overflow: TextOverflow.ellipsis,
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xffFEF3C7),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: const Color(0xffFDE68A), width: 0.8),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.workspace_premium, size: 11, color: Colors.orange),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      userOccupation,
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.orange,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                              const SizedBox(width: 8),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(color: const Color(0xffFEF3C7), borderRadius: BorderRadius.circular(6)),
-                                child: Text(userDesignation, style: const TextStyle(fontSize: 10, color: Colors.orange, fontWeight: FontWeight.bold)),
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xffF1F5F9),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: const Color(0xffE2E8F0), width: 0.8),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.business_outlined, size: 11, color: Color(0xff64748B)),
+                                    const SizedBox(width: 3),
+                                    Text(
+                                      userBranch,
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: Color(0xff475569),
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ],
-                          ),
-                          const SizedBox(height: 2),
-                          Row(
-                            children: [
-                              const Icon(Icons.hub_outlined, size: 13, color: Colors.grey),
-                              const SizedBox(width: 3),
-                              Text(userBranch, style: const TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w500)),
                             ],
                           ),
                         ],
@@ -240,6 +308,7 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
                             () => setState(() {}),
                             currentUser: _profile ?? ApiService.currentUser,
                             userBranch: userBranch,
+                            serverNotifications: _serverNotifs,
                           ),
                         ),
                         if (notifs.isNotEmpty)

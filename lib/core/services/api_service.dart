@@ -494,4 +494,80 @@ class ApiService {
     } catch (_) {}
     return [];
   }
+
+  // 16. NOTIFICATIONS API
+  static Future<List<Map<String, dynamic>>> getNotifications() async {
+    final t = await getToken();
+    if (t.isEmpty) return [];
+    try {
+      final res = await http.get(
+        Uri.parse('$baseUrl/notifications'),
+        headers: {
+          'Authorization': 'Bearer $t',
+          'Content-Type': 'application/json',
+        },
+      );
+      if (res.statusCode == 200) {
+        final decoded = jsonDecode(res.body);
+        if (decoded['data'] is List) {
+          return List<Map<String, dynamic>>.from(
+            (decoded['data'] as List).map((e) => Map<String, dynamic>.from(e)),
+          );
+        }
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  static Future<bool> markNotificationRead(String notificationId) async {
+    final t = await getToken();
+    if (t.isEmpty) return false;
+    try {
+      final res = await http.patch(
+        Uri.parse('$baseUrl/notifications/$notificationId/read'),
+        headers: {
+          'Authorization': 'Bearer $t',
+          'Content-Type': 'application/json',
+        },
+      );
+      return res.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<bool> markAllNotificationsRead() async {
+    final t = await getToken();
+    if (t.isEmpty) return false;
+    try {
+      final res = await http.patch(
+        Uri.parse('$baseUrl/notifications/read-all'),
+        headers: {
+          'Authorization': 'Bearer $t',
+          'Content-Type': 'application/json',
+        },
+      );
+      return res.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<bool> clearAllNotifications() async {
+    final t = await getToken();
+    if (t.isEmpty) return false;
+    try {
+      final res = await http.delete(
+        Uri.parse('$baseUrl/notifications'),
+        headers: {
+          'Authorization': 'Bearer $t',
+          'Content-Type': 'application/json',
+        },
+      );
+      return res.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
 }
+

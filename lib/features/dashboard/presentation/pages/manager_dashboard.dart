@@ -6,7 +6,10 @@ import '../../../../core/utils/safe_parser.dart';
 import '../../../expenses/presentation/widgets/approval_stepper.dart';
 import '../../../expenses/presentation/widgets/receipt_viewer_dialog.dart';
 import '../../../profile/presentation/widgets/profile_sheet.dart';
+import '../../../profile/presentation/widgets/change_password_dialog.dart';
+import '../../../../core/services/csv_export_service.dart';
 import '../../../reports/presentation/pages/reports_page.dart';
+
 import '../widgets/add_expense_dialog.dart';
 import '../widgets/edit_expense_dialog.dart';
 import '../widgets/floating_pill_nav_bar.dart';
@@ -25,6 +28,7 @@ class _ManagerDashboardState extends State<ManagerDashboard> {
   bool _showAllBranches = false;
   List<dynamic> _expenses = [];
   Map<String, dynamic>? _profile;
+  List<Map<String, dynamic>> _serverNotifs = [];
 
   @override
   void initState() {
@@ -41,6 +45,7 @@ class _ManagerDashboardState extends State<ManagerDashboard> {
     try {
       final list = await ApiService.getExpenses();
       _profile = ApiService.currentUser;
+      _serverNotifs = await ApiService.getNotifications();
 
       setState(() {
         _expenses = List<dynamic>.from(list);
@@ -50,6 +55,7 @@ class _ManagerDashboardState extends State<ManagerDashboard> {
       if (mounted) setState(() => _isLoading = false);
     }
   }
+
 
   Future<void> _processApproval(String id, String action, {String? reason}) async {
     if (id.isEmpty) return;
@@ -239,6 +245,7 @@ class _ManagerDashboardState extends State<ManagerDashboard> {
       _expenses,
       userBranch: _currentMgrBranch,
       currentUser: _profile ?? ApiService.currentUser,
+      serverNotifications: _serverNotifs,
     );
     List<dynamic> currentList;
     if (_selectedTab == 0) {
@@ -249,8 +256,8 @@ class _ManagerDashboardState extends State<ManagerDashboard> {
       currentList = _historyList;
     }
 
-    final userName = _getString(_profile?['name'], "Manager");
-    final userDesignation = _getString(_profile?['designation'], "Branch Manager");
+    final userName = _getString(_profile?['name'], "Branch Manager");
+    final userOccupation = _getString(_profile?['designation'], "Branch Manager");
     final userBranch = _getString(_currentMgrBranch, "Main Outlet");
 
     return Scaffold(
@@ -275,30 +282,71 @@ class _ManagerDashboardState extends State<ManagerDashboard> {
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Row(
+                          Text(
+                            userName,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 16,
+                              color: Color(0xff0F172A),
+                              letterSpacing: -0.2,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 4,
+                            crossAxisAlignment: WrapCrossAlignment.center,
                             children: [
-                              Flexible(
-                                child: Text(
-                                  userName,
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                                  overflow: TextOverflow.ellipsis,
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xffEFF6FF),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: const Color(0xffBFDBFE), width: 0.8),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.business_center_outlined, size: 11, color: Color(0xff2563EB)),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      userOccupation,
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: Color(0xff2563EB),
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                              const SizedBox(width: 8),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(color: const Color(0xffEFF6FF), borderRadius: BorderRadius.circular(6)),
-                                child: Text(userDesignation, style: const TextStyle(fontSize: 10, color: Color(0xff2563EB), fontWeight: FontWeight.bold)),
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xffF1F5F9),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: const Color(0xffE2E8F0), width: 0.8),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.location_on_outlined, size: 11, color: Color(0xff64748B)),
+                                    const SizedBox(width: 3),
+                                    Text(
+                                      userBranch,
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: Color(0xff475569),
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ],
-                          ),
-                          const SizedBox(height: 2),
-                          Row(
-                            children: [
-                              const Icon(Icons.location_on_outlined, size: 13, color: Colors.grey),
-                              const SizedBox(width: 3),
-                              Text(userBranch, style: const TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w500)),
                             ],
                           ),
                         ],
@@ -316,6 +364,7 @@ class _ManagerDashboardState extends State<ManagerDashboard> {
                             () => setState(() {}),
                             currentUser: _profile ?? ApiService.currentUser,
                             userBranch: userBranch,
+                            serverNotifications: _serverNotifs,
                           ),
                         ),
                         if (notifs.isNotEmpty)
@@ -330,19 +379,103 @@ class _ManagerDashboardState extends State<ManagerDashboard> {
                           ),
                       ],
                     ),
-                    IconButton(tooltip: "Refresh", icon: const Icon(Icons.refresh, color: Colors.grey), onPressed: _loadData),
-                    IconButton(
-                      tooltip: "Profile",
-                      icon: const Icon(Icons.person_outline, color: Colors.grey),
-                      onPressed: () => showModalBottomSheet(
-                        context: context,
-                        isScrollControlled: true,
-                        backgroundColor: Colors.transparent,
-                        builder: (_) => const ProfileSheet(),
-                      ),
+                    PopupMenuButton<String>(
+                      icon: const Icon(Icons.more_vert, color: Color(0xff64748B)),
+                      tooltip: "More Options",
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      onSelected: (val) async {
+                        if (val == 'new_claim') {
+                          showDialog(
+                            context: context,
+                            builder: (_) => AddExpenseDialog(onCreated: _loadData),
+                          );
+                        } else if (val == 'export_csv') {
+                          final ok = await CsvExportService.exportExpensesToCsv(
+                            _expenses,
+                            filenamePrefix: 'dev_motors_${userBranch.replaceAll(" ", "_").toLowerCase()}_ledger',
+                            branch: userBranch,
+                          );
+                          if (context.mounted && ok) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text("$userBranch ledger exported as CSV!"),
+                                backgroundColor: const Color(0xff10B981),
+                              ),
+                            );
+                          }
+                        } else if (val == 'change_password') {
+                          showDialog(
+                            context: context,
+                            builder: (_) => const ChangePasswordDialog(),
+                          );
+                        } else if (val == 'refresh') {
+                          _loadData();
+                        } else if (val == 'profile') {
+                          showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            backgroundColor: Colors.transparent,
+                            builder: (_) => const ProfileSheet(),
+                          );
+                        }
+                      },
+                      itemBuilder: (ctx) => [
+                        const PopupMenuItem(
+                          value: 'new_claim',
+                          child: Row(
+                            children: [
+                              Icon(Icons.add_circle_outline, color: Color(0xff2563EB), size: 18),
+                              SizedBox(width: 10),
+                              Expanded(child: Text('Submit Own Claim', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13))),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuItem(
+                          value: 'export_csv',
+                          child: Row(
+                            children: [
+                              Icon(Icons.download, color: Color(0xffEA580C), size: 18),
+                              SizedBox(width: 10),
+                              Expanded(child: Text('Export Branch CSV', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13))),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuDivider(),
+                        const PopupMenuItem(
+                          value: 'change_password',
+                          child: Row(
+                            children: [
+                              Icon(Icons.vpn_key_outlined, color: Color(0xff64748B), size: 18),
+                              SizedBox(width: 10),
+                              Expanded(child: Text('Change Password', style: TextStyle(fontSize: 13))),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuItem(
+                          value: 'refresh',
+                          child: Row(
+                            children: [
+                              Icon(Icons.refresh, color: Color(0xff64748B), size: 18),
+                              SizedBox(width: 10),
+                              Expanded(child: Text('Refresh Data', style: TextStyle(fontSize: 13))),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuItem(
+                          value: 'profile',
+                          child: Row(
+                            children: [
+                              Icon(Icons.person_outline, color: Color(0xff64748B), size: 18),
+                              SizedBox(width: 10),
+                              Expanded(child: Text('My Profile', style: TextStyle(fontSize: 13))),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
+
                 const SizedBox(height: 20),
 
                 // 3-Tab Switcher

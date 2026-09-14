@@ -16,10 +16,29 @@ class NotificationService {
     List<dynamic> expenses, {
     dynamic userBranch,
     Map<String, dynamic>? currentUser,
+    List<Map<String, dynamic>>? serverNotifications,
   }) {
     final List<Map<String, dynamic>> alerts = [];
     final r = role.toUpperCase();
     final dismissed = _dismissedByRole[r] ?? {};
+
+    // 1. Process real persistent server notifications if present
+    if (serverNotifications != null && serverNotifications.isNotEmpty) {
+      for (final sn in serverNotifications) {
+        final sId = SafeParser.getString(sn['id']);
+        if (sId.isEmpty || dismissed.contains(sId)) continue;
+        final isRead = sn['isRead'] == true;
+        alerts.add({
+          'id': sId,
+          'title': SafeParser.getString(sn['title'], 'Notification'),
+          'message': SafeParser.getString(sn['message'], ''),
+          'type': SafeParser.getString(sn['type'], 'INFO'),
+          'unread': !isRead,
+          'time': sn['createdAt'] != null ? 'Live' : 'Recent',
+          'isServer': true,
+        });
+      }
+    }
 
     final effectiveUser = currentUser ?? ApiService.currentUser;
     final effectiveBranch = userBranch ??
@@ -229,7 +248,6 @@ class NotificationService {
           }
         } else {
           if (ClaimWorkflowEngine.isPendingForCashier(status, exp)) {
-            // Match branch if cashier has branch assigned and is not central/senior
             final isSenior = ClaimWorkflowEngine.isSeniorCashier(effectiveUser);
             if (!isSenior && effectiveBranch != null && !ClaimWorkflowEngine.matchesBranch(userBranch: effectiveBranch, expenseBranch: branch, currentUser: effectiveUser)) {
               continue;
@@ -280,7 +298,7 @@ class NotificationService {
             'time': 'Approved for Payout',
             'expenseId': id,
           });
-        } else if (status == 'PENDING_OWNER' || status == 'APPROVED_1' || status.contains('MANAGER_APPROVED') || status.contains('APPROVED')) {
+        } else if (status == 'PENDING_OWNER' || status == 'APPROVED_1' || status.contains('MANAGER_APPROVED')) {
           alerts.add({
             'id': '${id}_emp_mgr_appr',
             'title': 'Claim Approved by Manager',
@@ -288,6 +306,16 @@ class NotificationService {
             'type': 'APPROVED',
             'unread': true,
             'time': 'In Owner Review',
+            'expenseId': id,
+          });
+        } else if (ClaimWorkflowEngine.isPendingForManager(status, exp) || status == 'PENDING' || status == 'SUBMITTED') {
+          alerts.add({
+            'id': '${id}_emp_submitted',
+            'title': 'Claim Under Review',
+            'message': 'Your claim of ₹$amount for "$title" is submitted & awaiting Branch Manager review.',
+            'type': 'PENDING_APPROVAL',
+            'unread': false,
+            'time': 'Under Review',
             'expenseId': id,
           });
         }
@@ -300,6 +328,7 @@ class NotificationService {
     final r = role.toUpperCase();
     _dismissedByRole.putIfAbsent(r, () => <String>{});
     _dismissedByRole[r]!.add(notifId);
+    ApiService.markNotificationRead(notifId);
   }
 
   static void clearAllForRole(
@@ -319,6 +348,7 @@ class NotificationService {
     for (var n in current) {
       _dismissedByRole[r]!.add(n['id'].toString());
     }
+    ApiService.clearAllNotifications();
   }
 
   static void showNotificationSheet(
@@ -328,6 +358,7 @@ class NotificationService {
     VoidCallback onRefresh, {
     Map<String, dynamic>? currentUser,
     dynamic userBranch,
+    List<Map<String, dynamic>>? serverNotifications,
   }) {
     showModalBottomSheet(
       context: context,
@@ -341,11 +372,12 @@ class NotificationService {
               expenses,
               currentUser: currentUser,
               userBranch: userBranch,
+              serverNotifications: serverNotifications,
             );
 
             return Container(
               padding: const EdgeInsets.all(20),
-              constraints: const BoxConstraints(maxHeight: 500),
+              constraints: const BoxConstraints(maxHeight: 520),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -356,17 +388,26 @@ class NotificationService {
                         children: [
                           const Icon(Icons.notifications_active, color: Color(0xff2563EB), size: 22),
                           const SizedBox(width: 8),
-                          Text("Notifications ($role)", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                          Text(
+                            "Notifications (${role.toUpperCase()})",
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          ),
                         ],
                       ),
                       if (notifs.isNotEmpty)
-                        TextButton(
+                        TextButton.icon(
+                          icon: const Icon(Icons.clear_all, size: 16, color: Colors.red),
                           onPressed: () {
-                            clearAllForRole(role, expenses);
+                            clearAllForRole(
+                              role,
+                              expenses,
+                              currentUser: currentUser,
+                              userBranch: userBranch,
+                            );
                             setModalState(() {});
                             onRefresh();
                           },
-                          child: const Text("Clear All", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                          label: const Text("Clear All", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
                         ),
                     ],
                   ),
@@ -374,7 +415,14 @@ class NotificationService {
                   if (notifs.isEmpty)
                     const Expanded(
                       child: Center(
-                        child: Text("No new notifications", style: TextStyle(color: Colors.grey)),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.notifications_none_outlined, size: 48, color: Colors.grey),
+                            SizedBox(height: 8),
+                            Text("No new notifications", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500)),
+                          ],
+                        ),
                       ),
                     )
                   else
@@ -418,6 +466,18 @@ class NotificationService {
                               title: Text(n['title'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                               subtitle: Text(n['message'] ?? '', style: const TextStyle(fontSize: 12, color: Colors.black87)),
                               trailing: Text(n['time'] ?? '', style: TextStyle(fontSize: 10, color: badgeColor, fontWeight: FontWeight.bold)),
+                              onTap: () {
+                                dismissNotification(role, n['id'].toString());
+                                Navigator.pop(ctx);
+                                onRefresh();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text("${n['title']}: ${n['message']}"),
+                                    backgroundColor: const Color(0xff1E293B),
+                                    duration: const Duration(seconds: 3),
+                                  ),
+                                );
+                              },
                             ),
                           );
                         },
@@ -432,3 +492,4 @@ class NotificationService {
     );
   }
 }
+
