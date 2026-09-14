@@ -21,7 +21,7 @@ class _LoginPageState extends State<LoginPage> {
   void _routeByRole(String role) {
     final r = role;
     Widget target;
-    if (r == 'OWNER') {
+    if (r == 'OWNER' || r == 'ADMIN') {
       target = const OwnerDashboard();
     } else if (r == 'MANAGER') {
       target = const ManagerDashboard();
