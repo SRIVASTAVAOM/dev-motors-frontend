@@ -15,9 +15,16 @@ class _AddStaffDialogState extends State<AddStaffDialog> {
   final _passCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
   String _selectedRole = 'EMPLOYEE';
+  String _selectedBranch = 'Aligarh';
   bool _loading = false;
 
   final List<String> _roles = ['EMPLOYEE', 'MANAGER', 'CASHIER', 'OWNER'];
+  final List<String> _branches = [
+    'Aligarh', 'Agra', 'Kanpur', 'Lucknow', 'Delhi', 'Noida',
+    'Ghaziabad', 'Meerut', 'Bareilly', 'Moradabad', 'Prayagraj',
+    'Varanasi', 'Gorakhpur', 'Mathura', 'Jhansi', 'Firozabad',
+    'Etawah', 'Unnao'
+  ];
 
   void _submit() async {
     final empId = _empIdCtrl.text.trim();
@@ -38,6 +45,7 @@ class _AddStaffDialogState extends State<AddStaffDialog> {
       name: name,
       password: pass,
       role: _selectedRole,
+      branch: _selectedBranch,
       phone: _phoneCtrl.text.trim().isNotEmpty ? _phoneCtrl.text.trim() : null,
     );
 
@@ -99,6 +107,17 @@ class _AddStaffDialogState extends State<AddStaffDialog> {
               ),
               items: _roles.map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
               onChanged: (v) => setState(() => _selectedRole = v ?? 'EMPLOYEE'),
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              initialValue: _selectedBranch,
+              decoration: InputDecoration(
+                labelText: 'Dealership Branch',
+                prefixIcon: const Icon(Icons.storefront_outlined),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              items: _branches.map((b) => DropdownMenuItem(value: b, child: Text(b))).toList(),
+              onChanged: (v) => setState(() => _selectedBranch = v ?? 'Aligarh'),
             ),
             const SizedBox(height: 12),
             TextField(

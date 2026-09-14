@@ -446,7 +446,7 @@ class ApiService {
     final t = await getToken();
     try {
       final res = await http.post(
-        Uri.parse('$baseUrl/users'),
+        Uri.parse('$baseUrl/auth/users/create'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $t',
@@ -457,13 +457,22 @@ class ApiService {
           'password': password,
           'role': role,
           'phone': phone,
-          'branch': branch ?? 'Main Dealership',
+          'branch': branch ?? 'Aligarh',
+          'locationId': locationId,
         }),
       );
       if (res.statusCode == 200 || res.statusCode == 201) {
         return jsonDecode(res.body);
       }
-    } catch (_) {}
+      if (res.body.isNotEmpty) {
+        try {
+          final err = jsonDecode(res.body);
+          return {'success': false, 'message': err['message'] ?? 'Failed to create user'};
+        } catch (_) {}
+      }
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
     return {'success': true, 'message': 'Staff member created successfully'};
   }
 
