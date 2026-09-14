@@ -4,7 +4,7 @@ import 'package:dev_motors/features/dashboard/presentation/pages/owner_dashboard
 import 'package:dev_motors/features/dashboard/presentation/widgets/add_staff_dialog.dart';
 
 void main() {
-  testWidgets('OwnerDashboard renders Add New Staff button and opens AddStaffDialog', (WidgetTester tester) async {
+  testWidgets('OwnerDashboard renders sleek more_vert menu and opens AddStaffDialog', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1200, 900);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -15,15 +15,26 @@ void main() {
       ),
     );
 
-    // Pump frame to render UI
     await tester.pump(const Duration(milliseconds: 200));
 
-    expect(find.text('Add New Staff'), findsOneWidget);
-    expect(find.text('Export CSV'), findsOneWidget);
-    expect(find.byIcon(Icons.person_add_alt_1), findsWidgets);
+    // Verify clean header with 3-dot menu
+    expect(find.byIcon(Icons.more_vert), findsOneWidget);
 
+    // Tap 3-dot menu
+    await tester.tap(find.byIcon(Icons.more_vert));
+    for (int i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+
+    // Verify clean popup options
+    expect(find.text('Add New Staff'), findsOneWidget);
+    expect(find.text('Export Ledger (CSV)'), findsOneWidget);
+
+    // Tap Add New Staff
     await tester.tap(find.text('Add New Staff'));
-    await tester.pump(const Duration(milliseconds: 300));
+    for (int i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
 
     expect(find.byType(AddStaffDialog), findsOneWidget);
     expect(find.text('Add Dealership Staff'), findsOneWidget);

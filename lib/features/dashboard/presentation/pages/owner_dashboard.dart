@@ -254,126 +254,101 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
                           ),
                       ],
                     ),
-                    IconButton(
-                      tooltip: "Add Staff Member",
-                      icon: const Icon(Icons.person_add_alt_1, color: Color(0xff2563EB)),
-                      onPressed: () => showDialog(
-                        context: context,
-                        builder: (_) => AddStaffDialog(onStaffCreated: _loadData),
-                      ),
-                    ),
-                    IconButton(
-                      tooltip: "Change Password",
-                      icon: const Icon(Icons.vpn_key_outlined, color: Colors.grey),
-                      onPressed: () => showDialog(
-                        context: context,
-                        builder: (_) => const ChangePasswordDialog(),
-                      ),
-                    ),
-                    IconButton(
-                      tooltip: "Export CSV",
-                      icon: const Icon(Icons.download, color: Colors.orange),
-                      onPressed: () async {
-                        final ok = await CsvExportService.exportExpensesToCsv(
-                          _expenses,
-                          filenamePrefix: 'dev_motors_company_ledger',
-                          branch: 'All Branches',
-                        );
-                        if (context.mounted && ok) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Company ledger exported as CSV!"),
-                              backgroundColor: Color(0xff10B981),
-                            ),
+                    PopupMenuButton<String>(
+                      icon: const Icon(Icons.more_vert, color: Color(0xff64748B)),
+                      tooltip: "More Options",
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      onSelected: (val) async {
+                        if (val == 'add_staff') {
+                          showDialog(
+                            context: context,
+                            builder: (_) => AddStaffDialog(onStaffCreated: _loadData),
+                          );
+                        } else if (val == 'export_csv') {
+                          final ok = await CsvExportService.exportExpensesToCsv(
+                            _expenses,
+                            filenamePrefix: 'dev_motors_company_ledger',
+                            branch: 'All Branches',
+                          );
+                          if (context.mounted && ok) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text("Company ledger exported as CSV!"),
+                                backgroundColor: Color(0xff10B981),
+                              ),
+                            );
+                          }
+                        } else if (val == 'change_password') {
+                          showDialog(
+                            context: context,
+                            builder: (_) => const ChangePasswordDialog(),
+                          );
+                        } else if (val == 'refresh') {
+                          _loadData();
+                        } else if (val == 'profile') {
+                          showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            backgroundColor: Colors.transparent,
+                            builder: (_) => const ProfileSheet(),
                           );
                         }
                       },
-                    ),
-                    IconButton(tooltip: "Refresh", icon: const Icon(Icons.refresh, color: Colors.grey), onPressed: _loadData),
-                    IconButton(
-                      tooltip: "Profile",
-                      icon: const Icon(Icons.person_outline, color: Colors.grey),
-                      onPressed: () => showModalBottomSheet(
-                        context: context,
-                        isScrollControlled: true,
-                        backgroundColor: Colors.transparent,
-                        builder: (_) => const ProfileSheet(),
-                      ),
+                      itemBuilder: (ctx) => [
+                        const PopupMenuItem(
+                          value: 'add_staff',
+                          child: Row(
+                            children: [
+                              Icon(Icons.person_add_alt_1, color: Color(0xff2563EB), size: 18),
+                              SizedBox(width: 10),
+                              Expanded(child: Text('Add New Staff', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13))),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuItem(
+                          value: 'export_csv',
+                          child: Row(
+                            children: [
+                              Icon(Icons.download, color: Color(0xffEA580C), size: 18),
+                              SizedBox(width: 10),
+                              Expanded(child: Text('Export Ledger (CSV)', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13))),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuDivider(),
+                        const PopupMenuItem(
+                          value: 'change_password',
+                          child: Row(
+                            children: [
+                              Icon(Icons.vpn_key_outlined, color: Color(0xff64748B), size: 18),
+                              SizedBox(width: 10),
+                              Expanded(child: Text('Change Password', style: TextStyle(fontSize: 13))),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuItem(
+                          value: 'refresh',
+                          child: Row(
+                            children: [
+                              Icon(Icons.refresh, color: Color(0xff64748B), size: 18),
+                              SizedBox(width: 10),
+                              Expanded(child: Text('Refresh Data', style: TextStyle(fontSize: 13))),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuItem(
+                          value: 'profile',
+                          child: Row(
+                            children: [
+                              Icon(Icons.person_outline, color: Color(0xff64748B), size: 18),
+                              SizedBox(width: 10),
+                              Expanded(child: Text('My Profile', style: TextStyle(fontSize: 13))),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ],
-                ),
-                const SizedBox(height: 14),
-
-                // Owner Quick Actions Bar
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xffE2E8F0)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.03),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xff2563EB),
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            padding: const EdgeInsets.symmetric(vertical: 11),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                          ),
-                          icon: const Icon(Icons.person_add_alt_1, size: 16),
-                          label: const Text(
-                            "Add New Staff",
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                          ),
-                          onPressed: () => showDialog(
-                            context: context,
-                            builder: (_) => AddStaffDialog(onStaffCreated: _loadData),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xffEA580C),
-                            side: const BorderSide(color: Color(0xffFDBA74)),
-                            padding: const EdgeInsets.symmetric(vertical: 11),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                          ),
-                          icon: const Icon(Icons.download, size: 16),
-                          label: const Text(
-                            "Export CSV",
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                          ),
-                          onPressed: () async {
-                            final ok = await CsvExportService.exportExpensesToCsv(
-                              _expenses,
-                              filenamePrefix: 'dev_motors_company_ledger',
-                              branch: 'All Branches',
-                            );
-                            if (context.mounted && ok) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text("Company ledger exported as CSV!"),
-                                  backgroundColor: Color(0xff10B981),
-                                ),
-                              );
-                            }
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
                 const SizedBox(height: 16),
 
