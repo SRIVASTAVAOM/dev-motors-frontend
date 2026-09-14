@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../dashboard/presentation/widgets/add_staff_dialog.dart';
 import 'change_password_dialog.dart';
 
 class ProfileSheet extends StatefulWidget {
@@ -339,6 +340,29 @@ class _ProfileSheetState extends State<ProfileSheet> {
                 ),
                 _buildInfoTile(Icons.location_on_outlined, "Branch Location", location.toString()),
                 const SizedBox(height: 20),
+                if (role.toUpperCase() == 'OWNER') ...[
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xff2563EB),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      icon: const Icon(Icons.person_add_alt_1, size: 18),
+                      label: const Text("Add Dealership Staff", style: TextStyle(fontWeight: FontWeight.bold)),
+                      onPressed: () {
+                        Navigator.pop(context);
+                        showDialog(
+                          context: context,
+                          builder: (_) => AddStaffDialog(onStaffCreated: () {}),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                ],
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(

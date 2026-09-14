@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/notification_service.dart';
 import '../widgets/add_expense_dialog.dart';
+import '../widgets/add_staff_dialog.dart';
+import '../widgets/change_password_dialog.dart';
 import '../widgets/edit_expense_dialog.dart';
 import '../widgets/floating_pill_nav_bar.dart';
 import '../../../profile/presentation/widgets/profile_sheet.dart';
@@ -253,6 +255,22 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
                       ],
                     ),
                     IconButton(
+                      tooltip: "Add Staff Member",
+                      icon: const Icon(Icons.person_add_alt_1, color: Color(0xff2563EB)),
+                      onPressed: () => showDialog(
+                        context: context,
+                        builder: (_) => AddStaffDialog(onStaffCreated: _loadData),
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: "Change Password",
+                      icon: const Icon(Icons.vpn_key_outlined, color: Colors.grey),
+                      onPressed: () => showDialog(
+                        context: context,
+                        builder: (_) => const ChangePasswordDialog(),
+                      ),
+                    ),
+                    IconButton(
                       tooltip: "Export CSV",
                       icon: const Icon(Icons.download, color: Colors.orange),
                       onPressed: () async {
@@ -284,7 +302,80 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 14),
+
+                // Owner Quick Actions Bar
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xffE2E8F0)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.03),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xff2563EB),
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(vertical: 11),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          icon: const Icon(Icons.person_add_alt_1, size: 16),
+                          label: const Text(
+                            "Add New Staff",
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                          ),
+                          onPressed: () => showDialog(
+                            context: context,
+                            builder: (_) => AddStaffDialog(onStaffCreated: _loadData),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xffEA580C),
+                            side: const BorderSide(color: Color(0xffFDBA74)),
+                            padding: const EdgeInsets.symmetric(vertical: 11),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          icon: const Icon(Icons.download, size: 16),
+                          label: const Text(
+                            "Export CSV",
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                          ),
+                          onPressed: () async {
+                            final ok = await CsvExportService.exportExpensesToCsv(
+                              _expenses,
+                              filenamePrefix: 'dev_motors_company_ledger',
+                              branch: 'All Branches',
+                            );
+                            if (context.mounted && ok) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("Company ledger exported as CSV!"),
+                                  backgroundColor: Color(0xff10B981),
+                                ),
+                              );
+                            }
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
 
                 // 2-Tab Switcher
                 Container(
