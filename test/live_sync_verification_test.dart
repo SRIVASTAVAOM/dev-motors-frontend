@@ -6,7 +6,21 @@ import 'package:dev_motors/core/services/notification_service.dart';
 
 void main() {
   test('Verify live backend API health and clean database state', () async {
-    final res = await http.get(Uri.parse('https://dev-motors-backend.onrender.com/api/expenses'));
+    final healthRes = await http.get(Uri.parse('https://dev-motors-backend.onrender.com/health'));
+    expect(healthRes.statusCode, 200);
+
+    final loginRes = await http.post(
+      Uri.parse('https://dev-motors-backend.onrender.com/api/auth/login'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'employeeId': 'nexa_stephen_sm', 'password': 'Dev@2026'}),
+    );
+    expect(loginRes.statusCode, 200);
+    final token = jsonDecode(loginRes.body)['data']['token'];
+
+    final res = await http.get(
+      Uri.parse('https://dev-motors-backend.onrender.com/api/expenses'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
     expect(res.statusCode, 200);
 
     final decoded = jsonDecode(res.body);

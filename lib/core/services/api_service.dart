@@ -156,6 +156,15 @@ class ApiService {
 
   // 4. CATEGORIES
   static Future<List<Map<String, dynamic>>> getCategories() async {
+    try {
+      final res = await http.get(Uri.parse('$baseUrl/expenses/categories'));
+      if (res.statusCode == 200) {
+        final decoded = jsonDecode(res.body);
+        if (decoded['data'] is List && (decoded['data'] as List).isNotEmpty) {
+          return List<Map<String, dynamic>>.from(decoded['data']);
+        }
+      }
+    } catch (_) {}
     return [
       {"id": "b87165b9-fc92-4444-8573-13240e421837", "name": "General Expenses"},
       {"id": "b87165b9-fc92-4444-8573-13240e421837", "name": "Fuel & Travel"},
