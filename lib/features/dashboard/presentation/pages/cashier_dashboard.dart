@@ -9,6 +9,7 @@ import '../../../profile/presentation/widgets/profile_sheet.dart';
 import '../../../expenses/presentation/widgets/approval_stepper.dart';
 import '../../../reports/presentation/pages/reports_page.dart';
 import '../../../../core/utils/claim_workflow_engine.dart';
+import '../../../../core/services/csv_export_service.dart';
 
 class CashierDashboard extends StatefulWidget {
   const CashierDashboard({super.key});
@@ -211,6 +212,25 @@ class _CashierDashboardState extends State<CashierDashboard> {
                             ),
                           ),
                       ],
+                    ),
+                    IconButton(
+                      tooltip: "Export CSV",
+                      icon: const Icon(Icons.download, color: Color(0xff2563EB)),
+                      onPressed: () async {
+                        final ok = await CsvExportService.exportExpensesToCsv(
+                          _expenses,
+                          filenamePrefix: 'dev_motors_cashier_ledger',
+                          branch: userBranch,
+                        );
+                        if (context.mounted && ok) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("Ledger exported as CSV for Tally/Excel!"),
+                              backgroundColor: Color(0xff10B981),
+                            ),
+                          );
+                        }
+                      },
                     ),
                     IconButton(tooltip: "Refresh", icon: const Icon(Icons.refresh, color: Colors.grey), onPressed: _loadData),
                     IconButton(

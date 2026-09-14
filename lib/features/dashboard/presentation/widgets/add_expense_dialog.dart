@@ -128,7 +128,13 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
                     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  validator: (v) => (v == null || v.trim().isEmpty) ? "Please enter amount" : null,
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) return "Please enter amount";
+                    final parsed = double.tryParse(v.trim());
+                    if (parsed == null || parsed <= 0) return "Please enter a valid amount greater than 0";
+                    if (parsed > 1000000) return "Amount cannot exceed ₹10,00,000 per claim";
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 16),
                 const Text("Description / Purpose", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.grey)),
@@ -141,7 +147,11 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
                     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  validator: (v) => (v == null || v.trim().isEmpty) ? "Please enter purpose" : null,
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) return "Please enter purpose";
+                    if (v.trim().length < 3) return "Purpose must be at least 3 characters";
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 16),
                 const Text("Vehicle / Job Card No (Optional)", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.grey)),

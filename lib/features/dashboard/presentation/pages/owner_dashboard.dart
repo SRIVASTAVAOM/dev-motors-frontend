@@ -9,6 +9,7 @@ import '../../../expenses/presentation/widgets/approval_stepper.dart';
 import '../../../expenses/presentation/widgets/receipt_viewer_dialog.dart';
 import '../../../reports/presentation/pages/reports_page.dart';
 import '../../../../core/utils/claim_workflow_engine.dart';
+import '../../../../core/services/csv_export_service.dart';
 
 class OwnerDashboard extends StatefulWidget {
   const OwnerDashboard({super.key});
@@ -250,6 +251,25 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
                             ),
                           ),
                       ],
+                    ),
+                    IconButton(
+                      tooltip: "Export CSV",
+                      icon: const Icon(Icons.download, color: Colors.orange),
+                      onPressed: () async {
+                        final ok = await CsvExportService.exportExpensesToCsv(
+                          _expenses,
+                          filenamePrefix: 'dev_motors_company_ledger',
+                          branch: 'All Branches',
+                        );
+                        if (context.mounted && ok) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("Company ledger exported as CSV!"),
+                              backgroundColor: Color(0xff10B981),
+                            ),
+                          );
+                        }
+                      },
                     ),
                     IconButton(tooltip: "Refresh", icon: const Icon(Icons.refresh, color: Colors.grey), onPressed: _loadData),
                     IconButton(
