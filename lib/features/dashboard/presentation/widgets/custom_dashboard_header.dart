@@ -3,7 +3,7 @@ import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../profile/presentation/widgets/profile_sheet.dart';
 import 'notifications_sheet.dart';
 import 'add_staff_dialog.dart';
-import 'change_password_dialog.dart';
+import '../../../profile/presentation/widgets/change_password_dialog.dart';
 
 class CustomDashboardHeader extends StatelessWidget {
   final String? title;

@@ -8,6 +8,7 @@ import 'features/dashboard/presentation/pages/cashier_dashboard.dart';
 import 'features/dashboard/presentation/pages/owner_dashboard.dart';
 import 'features/auth/presentation/providers/auth_provider.dart';
 
+import 'app/theme.dart';
 import 'core/services/notification_service.dart';
 
 void main() async {
@@ -44,15 +45,7 @@ class DevMotorsApp extends StatelessWidget {
     return MaterialApp(
       title: 'Dev Motors',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        fontFamily: 'Roboto',
-        scaffoldBackgroundColor: const Color(0xffF8FAFC),
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xffD32F2F),
-          primary: const Color(0xffD32F2F),
-        ),
-        useMaterial3: true,
-      ),
+      theme: AppTheme.light,
       home: const SplashScreen(),
       routes: {
         '/login': (context) => const LoginPage(),

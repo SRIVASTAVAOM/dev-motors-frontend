@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
+import '../../../../core/constants/app_colors.dart';
 import '../../../../core/services/api_service.dart';
-import '../../../../core/services/notification_service.dart';
 import '../../../../core/utils/claim_workflow_engine.dart';
 import '../../../../core/utils/safe_parser.dart';
-import '../../../expenses/presentation/widgets/approval_stepper.dart';
-import '../../../expenses/presentation/widgets/receipt_viewer_dialog.dart';
+import '../../../expenses/presentation/widgets/unified_claim_card.dart';
 import '../../../profile/presentation/widgets/profile_sheet.dart';
-import '../../../profile/presentation/widgets/change_password_dialog.dart';
 import '../../../reports/presentation/pages/reports_page.dart';
 import '../widgets/add_expense_dialog.dart';
 import '../widgets/edit_expense_dialog.dart';
 import '../widgets/floating_pill_nav_bar.dart';
+import '../widgets/pill_tab_bar.dart';
+import '../widgets/unified_executive_header.dart';
 
 class EmployeeDashboard extends StatefulWidget {
   const EmployeeDashboard({super.key});
@@ -45,12 +45,11 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
       setState(() {
         _expenses = List<dynamic>.from(list);
       });
-    } catch (_) {}
-    finally {
+    } catch (_) {
+    } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
-
 
   Future<void> _deleteExpense(String id) async {
     final ok = await ApiService.deleteExpense(id);
@@ -72,14 +71,14 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
   }
 
   List<dynamic> get _activeList => _myOwnExpenses.where((e) {
-    if (e is! Map) return false;
-    return ClaimWorkflowEngine.isVisibleInEmployeeActive(e['status'], e);
-  }).toList();
+        if (e is! Map) return false;
+        return ClaimWorkflowEngine.isVisibleInEmployeeActive(e['status'], e);
+      }).toList();
 
   List<dynamic> get _historyList => _myOwnExpenses.where((e) {
-    if (e is! Map) return false;
-    return ClaimWorkflowEngine.isSettledOrRejected(e['status'], e);
-  }).toList();
+        if (e is! Map) return false;
+        return ClaimWorkflowEngine.isSettledOrRejected(e['status'], e);
+      }).toList();
 
   @override
   Widget build(BuildContext context) {
@@ -89,280 +88,50 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
 
     final userName = _getString(_profile?['name'], "Staff Member");
     final userOccupation = _getString(_profile?['designation'], "Operations Staff");
-    final userBranch = _profile?['location'] != null && _profile?['location'] is Map 
-        ? _getString(_profile?['location']['name'], "Main Outlet") 
+    final userBranch = _profile?['location'] != null && _profile?['location'] is Map
+        ? _getString(_profile?['location']['name'], "Main Outlet")
         : _getString(_profile?['branch'], "Main Outlet");
 
-    final notifs = NotificationService.getNotificationsForRole(
-      'EMPLOYEE',
-      _myOwnExpenses,
-      userBranch: userBranch,
-      currentUser: _profile ?? ApiService.currentUser,
-      serverNotifications: _serverNotifs,
-    );
     final currentList = _selectedTab == 0 ? _activeList : _historyList;
 
     return Scaffold(
-      backgroundColor: const Color(0xffF8FAFC),
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: _loadData,
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Row(
-                  children: [
-                    const CircleAvatar(
-                      radius: 22,
-                      backgroundColor: Color(0xffEFF6FF),
-                      child: Icon(Icons.person, color: Color(0xff2563EB), size: 24),
+                UnifiedExecutiveHeader(
+                  role: 'EMPLOYEE',
+                  userName: userName,
+                  userOccupation: userOccupation,
+                  userBranch: userBranch,
+                  expenses: _myOwnExpenses,
+                  serverNotifications: _serverNotifs,
+                  onRefresh: _loadData,
+                ),
+                const SizedBox(height: 18),
+                PillTabBar(
+                  selectedIndex: _selectedTab,
+                  tabs: [
+                    PillTabItem(
+                      label: "In-Progress",
+                      count: _activeList.length,
+                      icon: Icons.hourglass_top_rounded,
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            userName,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 16,
-                              color: Color(0xff0F172A),
-                              letterSpacing: -0.2,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 4),
-                          Wrap(
-                            spacing: 6,
-                            runSpacing: 4,
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xffEFF6FF),
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(color: const Color(0xffBFDBFE), width: 0.8),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(Icons.badge_outlined, size: 11, color: Color(0xff2563EB)),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      userOccupation,
-                                      style: const TextStyle(
-                                        fontSize: 11,
-                                        color: Color(0xff2563EB),
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xffF1F5F9),
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(color: const Color(0xffE2E8F0), width: 0.8),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(Icons.location_on_outlined, size: 11, color: Color(0xff64748B)),
-                                    const SizedBox(width: 3),
-                                    Text(
-                                      userBranch,
-                                      style: const TextStyle(
-                                        fontSize: 11,
-                                        color: Color(0xff475569),
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    Stack(
-                      children: [
-                        IconButton(
-                          tooltip: "Notifications",
-                          icon: const Icon(Icons.notifications_none, color: Colors.grey),
-                          onPressed: () => NotificationService.showNotificationSheet(
-                            context,
-                            'EMPLOYEE',
-                            _myOwnExpenses,
-                            () => setState(() {}),
-                            currentUser: _profile ?? ApiService.currentUser,
-                            userBranch: userBranch,
-                            serverNotifications: _serverNotifs,
-                          ),
-                        ),
-                        if (notifs.isNotEmpty)
-                          Positioned(
-                            right: 8,
-                            top: 8,
-                            child: Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
-                              child: Text("${notifs.length}", style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
-                            ),
-                          ),
-                      ],
-                    ),
-                    PopupMenuButton<String>(
-                      icon: const Icon(Icons.more_vert, color: Color(0xff64748B)),
-                      tooltip: "More Options",
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      onSelected: (val) {
-                        if (val == 'new_claim') {
-                          showDialog(
-                            context: context,
-                            builder: (_) => AddExpenseDialog(onCreated: _loadData),
-                          );
-                        } else if (val == 'change_password') {
-                          showDialog(
-                            context: context,
-                            builder: (_) => const ChangePasswordDialog(),
-                          );
-                        } else if (val == 'refresh') {
-                          _loadData();
-                        } else if (val == 'profile') {
-                          showModalBottomSheet(
-                            context: context,
-                            isScrollControlled: true,
-                            backgroundColor: Colors.transparent,
-                            builder: (_) => const ProfileSheet(),
-                          );
-                        }
-                      },
-                      itemBuilder: (ctx) => [
-                        const PopupMenuItem(
-                          value: 'new_claim',
-                          child: Row(
-                            children: [
-                              Icon(Icons.add_circle_outline, color: Color(0xff2563EB), size: 18),
-                              SizedBox(width: 10),
-                              Expanded(child: Text('Submit Claim', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13))),
-                            ],
-                          ),
-                        ),
-                        const PopupMenuDivider(),
-                        const PopupMenuItem(
-                          value: 'change_password',
-                          child: Row(
-                            children: [
-                              Icon(Icons.vpn_key_outlined, color: Color(0xff64748B), size: 18),
-                              SizedBox(width: 10),
-                              Expanded(child: Text('Change Password', style: TextStyle(fontSize: 13))),
-                            ],
-                          ),
-                        ),
-                        const PopupMenuItem(
-                          value: 'refresh',
-                          child: Row(
-                            children: [
-                              Icon(Icons.refresh, color: Color(0xff64748B), size: 18),
-                              SizedBox(width: 10),
-                              Expanded(child: Text('Refresh Data', style: TextStyle(fontSize: 13))),
-                            ],
-                          ),
-                        ),
-                        const PopupMenuItem(
-                          value: 'profile',
-                          child: Row(
-                            children: [
-                              Icon(Icons.person_outline, color: Color(0xff64748B), size: 18),
-                              SizedBox(width: 10),
-                              Expanded(child: Text('My Profile', style: TextStyle(fontSize: 13))),
-                            ],
-                          ),
-                        ),
-                      ],
+                    PillTabItem(
+                      label: "Settled",
+                      count: _historyList.length,
+                      icon: Icons.check_circle_outline_rounded,
                     ),
                   ],
-                ),
-
-                const SizedBox(height: 20),
-
-                // 2-Tab Queue Switcher
-                Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(14)),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: InkWell(
-                          onTap: () => setState(() => _selectedTab = 0),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            decoration: BoxDecoration(
-                              color: _selectedTab == 0 ? Colors.white : Colors.transparent,
-                              borderRadius: BorderRadius.circular(10),
-                              boxShadow: _selectedTab == 0 ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4)] : null,
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(Icons.hourglass_top, size: 16, color: Color(0xff2563EB)),
-                                const SizedBox(width: 6),
-                                Text(
-                                  "In-Progress (${_activeList.length})",
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 13,
-                                    color: _selectedTab == 0 ? const Color(0xff2563EB) : Colors.grey.shade700,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: InkWell(
-                          onTap: () => setState(() => _selectedTab = 1),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            decoration: BoxDecoration(
-                              color: _selectedTab == 1 ? Colors.white : Colors.transparent,
-                              borderRadius: BorderRadius.circular(10),
-                              boxShadow: _selectedTab == 1 ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4)] : null,
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(Icons.check_circle_outline, size: 16, color: Colors.green),
-                                const SizedBox(width: 6),
-                                Text(
-                                  "Settled (${_historyList.length})",
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 13,
-                                    color: _selectedTab == 1 ? const Color(0xff1E293B) : Colors.grey.shade700,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                  onTabSelected: (idx) => setState(() => _selectedTab = idx),
                 ),
                 const SizedBox(height: 16),
-
                 if (_isLoading)
                   const Center(child: Padding(padding: EdgeInsets.all(40), child: CircularProgressIndicator()))
                 else if (currentList.isEmpty)
@@ -371,11 +140,15 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
                       padding: const EdgeInsets.all(40),
                       child: Column(
                         children: [
-                          Icon(_selectedTab == 0 ? Icons.inbox_outlined : Icons.history, size: 48, color: Colors.grey.shade400),
+                          Icon(
+                            _selectedTab == 0 ? Icons.inbox_outlined : Icons.history_rounded,
+                            size: 48,
+                            color: AppColors.textMuted,
+                          ),
                           const SizedBox(height: 12),
                           Text(
                             _selectedTab == 0 ? "No active claims in progress" : "No settled claims yet",
-                            style: const TextStyle(color: Colors.grey),
+                            style: const TextStyle(color: AppColors.textSecondary),
                           ),
                         ],
                       ),
@@ -386,143 +159,27 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: currentList.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 14),
+                    separatorBuilder: (_, __) => const SizedBox(height: 12),
                     itemBuilder: (ctx, idx) {
-                        final rawExp = currentList[idx];
-                        final Map<String, dynamic> exp = (rawExp is Map) ? Map<String, dynamic>.from(rawExp) : {};
-                        
-                        // Safe extraction of status
-                        final rawStatus = exp['status'];
-                        final String statusStr = (rawStatus is Map) 
-                            ? (rawStatus['name'] ?? rawStatus['status'] ?? 'PENDING').toString() 
-                            : (rawStatus?.toString() ?? 'PENDING');
+                      final exp = Map<String, dynamic>.from(currentList[idx] is Map ? currentList[idx] : {});
+                      final rawStatus = exp['status'];
+                      final statusStr = (rawStatus is Map)
+                          ? (rawStatus['name'] ?? rawStatus['status'] ?? 'PENDING').toString()
+                          : (rawStatus?.toString() ?? 'PENDING');
+                      final isPending = ClaimWorkflowEngine.isPendingForManager(statusStr, exp);
+                      final expId = _getString(exp['_id'] ?? exp['id']);
 
-                        final rawReceipt = exp['receiptImage'] ?? exp['receiptUrl'] ?? '';
-                        final receiptData = (rawReceipt is Map) ? '' : rawReceipt.toString();
-                        final hasReceipt = receiptData.trim().isNotEmpty && receiptData != 'null';
-
-                        final isPendingApproval1 = ClaimWorkflowEngine.isPendingForManager(statusStr, exp);
-
-                        return Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.grey.shade200),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildLiveEmpTaskBar(exp),
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(10),
-                                    decoration: BoxDecoration(color: const Color(0xffEFF6FF), borderRadius: BorderRadius.circular(12)),
-                                    child: const Icon(Icons.receipt, color: Color(0xff2563EB), size: 20),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(_getString(exp['description'], 'Expense Claim'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          "${_getString(exp['category'], 'General')} • ${_getString(exp['location'], userBranch)}",
-                                          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  Text("₹${SafeParser.getDouble(exp['amount']).toStringAsFixed(0)}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xff1E293B))),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              ApprovalStepper(
-                                status: statusStr,
-                                rejectionReason: ClaimWorkflowEngine.getRejectionRemark(
-                                  _getString(exp['id']).isNotEmpty ? _getString(exp['id']) : _getString(exp['_id']),
-                                  exp,
-                                ),
-                                creatorRole: ClaimWorkflowEngine.extractCreatorRole(exp),
-                                expense: exp,
-                              ),
-
-                            if (hasReceipt) ...[
-                              const SizedBox(height: 8),
-                              InkWell(
-                                onTap: () => showDialog(
-                                  context: context,
-                                  builder: (_) => ReceiptViewerDialog(
-                                    receiptData: receiptData,
-                                    title: _getString(exp['description'], 'Expense Bill'),
-                                  ),
-                                ),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xffEFF6FF),
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(color: const Color(0xffBFDBFE)),
-                                  ),
-                                  child: const Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(Icons.attachment_rounded, size: 15, color: Color(0xff2563EB)),
-                                      SizedBox(width: 5),
-                                      Text(
-                                        "View Attached Receipt / Bill",
-                                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xff2563EB)),
-                                      ),
-                                      SizedBox(width: 4),
-                                      Icon(Icons.open_in_new, size: 13, color: Color(0xff2563EB)),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-
-                            if (isPendingApproval1) ...[
-                              const Divider(height: 20),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                children: [
-                                  InkWell(
-                                    onTap: () => showDialog(context: context, builder: (_) => EditExpenseDialog(expense: exp, onUpdated: _loadData)),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                      decoration: BoxDecoration(color: const Color(0xffEFF6FF), borderRadius: BorderRadius.circular(8)),
-                                      child: const Row(
-                                        children: [
-                                          Icon(Icons.edit, size: 14, color: Color(0xff2563EB)),
-                                          SizedBox(width: 4),
-                                          Text("Edit & Receipt", style: TextStyle(fontSize: 12, color: Color(0xff2563EB), fontWeight: FontWeight.bold)),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  InkWell(
-                                    onTap: () => _deleteExpense(_getString(exp['_id'] ?? exp['id'])),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                      decoration: BoxDecoration(color: const Color(0xffFEE2E2), borderRadius: BorderRadius.circular(8)),
-                                      child: const Row(
-                                        children: [
-                                          Icon(Icons.delete_outline, size: 14, color: Colors.red),
-                                          SizedBox(width: 4),
-                                          Text("Delete", style: TextStyle(fontSize: 12, color: Colors.red, fontWeight: FontWeight.bold)),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ],
+                      return UnifiedClaimCard(
+                        expense: exp,
+                        userBranch: userBranch,
+                        isOwnClaim: true,
+                        canEdit: isPending,
+                        canDelete: isPending,
+                        onEdit: () => showDialog(
+                          context: context,
+                          builder: (_) => EditExpenseDialog(expense: exp, onUpdated: _loadData),
                         ),
+                        onDelete: () => _deleteExpense(expId),
                       );
                     },
                   ),
@@ -533,7 +190,7 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: const Color(0xff2563EB),
+        backgroundColor: AppColors.primary,
         icon: const Icon(Icons.add, color: Colors.white),
         label: const Text("Add Expense", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         onPressed: () => showDialog(context: context, builder: (_) => AddExpenseDialog(onCreated: _loadData)),
@@ -541,13 +198,18 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
       bottomNavigationBar: FloatingPillNavBar(
         currentIndex: _navIndex,
         items: const [
-          FloatingPillNavItem(icon: Icons.receipt_long, label: 'Claims'),
-          FloatingPillNavItem(icon: Icons.bar_chart, label: 'Reports'),
-          FloatingPillNavItem(icon: Icons.person, label: 'Profile'),
+          FloatingPillNavItem(icon: Icons.receipt_long_rounded, label: 'Claims'),
+          FloatingPillNavItem(icon: Icons.bar_chart_rounded, label: 'Reports'),
+          FloatingPillNavItem(icon: Icons.person_outline_rounded, label: 'Profile'),
         ],
         onTap: (idx) {
           if (idx == 2) {
-            showModalBottomSheet(context: context, isScrollControlled: true, backgroundColor: Colors.transparent, builder: (_) => const ProfileSheet());
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (_) => const ProfileSheet(),
+            );
           } else {
             setState(() => _navIndex = idx);
           }
@@ -555,48 +217,4 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
       ),
     );
   }
-
-  Widget _buildLiveEmpTaskBar(dynamic rawExp) {
-    final exp = (rawExp is Map) ? rawExp : <String, dynamic>{};
-    final rawStatus = exp['status'];
-    String s = '';
-    if (rawStatus is String) {
-      s = rawStatus.toUpperCase();
-    } else if (rawStatus is Map) {
-      s = (rawStatus['name'] ?? rawStatus['status'] ?? '').toString().toUpperCase();
-    }
-
-    Color bg = const Color(0xffF1F5F9);
-    Color fg = const Color(0xff475569);
-    String label = 'Pending Review';
-
-    if (s.contains('PAID') || s.contains('DISBURSED') || s.contains('SETTLE')) {
-      bg = const Color(0xffDCFCE7);
-      fg = const Color(0xff16A34A);
-      label = 'Disbursed / Paid (Settled)';
-    } else if (s.contains('REJECT')) {
-      bg = const Color(0xffFEE2E2);
-      fg = const Color(0xffDC2626);
-      label = 'Rejected';
-    } else if (s.contains('PENDING_CASHIER') || s.contains('APPROVED_2') || s.contains('OWNER_APPROVED') || s.contains('APPROVED_OWNER')) {
-      bg = const Color(0xffF3E8FF);
-      fg = const Color(0xff7E22CE);
-      label = 'Approved by Owner • Ready for Cashier Payout';
-    } else if (s.contains('PENDING_OWNER') || s.contains('APPROVED_1') || s.contains('MANAGER_APPROVED') || s == 'APPROVED') {
-      bg = const Color(0xffFEF3C7);
-      fg = const Color(0xffD97706);
-      label = 'Approved by Manager • In Review with Owner';
-    } else if (s.contains('MANAGER') || s.contains('SUBMITTED') || s.contains('PENDING')) {
-      bg = const Color(0xffEFF6FF);
-      fg = const Color(0xff2563EB);
-      label = 'Submitted • In Review with Branch Manager';
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(20)),
-      child: Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: fg)),
-    );
-  }
-
 }
