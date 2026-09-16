@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/notification_service.dart';
+import '../../../../core/utils/image_picker_helper.dart';
 import '../../../profile/presentation/widgets/change_password_dialog.dart';
+import '../../../profile/presentation/widgets/profile_sheet.dart';
 import 'add_staff_dialog.dart';
 
 class UnifiedExecutiveHeader extends StatelessWidget {
@@ -83,15 +85,25 @@ class UnifiedExecutiveHeader extends StatelessWidget {
       serverNotifications: serverNotifications,
     );
 
+    final rawAvatar = (ApiService.currentUser?['avatarUrl'] ?? ApiService.currentUser?['profileImage'] ?? '').toString().trim();
+    final avatarProvider = ImagePickerHelper.getAvatarImageProvider(rawAvatar);
+
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          CircleAvatar(
-            radius: 22,
-            backgroundColor: roleBg,
-            child: Icon(_getRoleIcon(), color: roleColor, size: 24),
+          InkWell(
+            onTap: () => ProfileSheet.show(context, onProfileUpdated: onRefresh),
+            borderRadius: BorderRadius.circular(22),
+            child: CircleAvatar(
+              radius: 22,
+              backgroundColor: roleBg,
+              backgroundImage: avatarProvider,
+              child: avatarProvider == null
+                  ? Icon(_getRoleIcon(), color: roleColor, size: 24)
+                  : null,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/utils/image_picker_helper.dart';
 import '../../../dashboard/presentation/widgets/add_staff_dialog.dart';
 import 'change_password_dialog.dart';
 
@@ -137,6 +139,72 @@ class _ProfileSheetState extends State<ProfileSheet> {
 
     final customUrlCtrl = TextEditingController();
 
+    Future<void> saveAvatar(String urlOrBase64, BuildContext ctx) async {
+      Navigator.pop(ctx);
+      if (mounted) setState(() => _loading = true);
+      try {
+        await ApiService.updateProfile(avatarUrl: urlOrBase64);
+        await _loadUser();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: urlOrBase64.isEmpty ? Colors.orange : Colors.green,
+              content: Text(urlOrBase64.isEmpty ? "Profile picture removed" : "Profile picture updated successfully!"),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: Colors.red,
+              content: Text("Failed to update profile: $e"),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      } finally {
+        if (mounted) setState(() => _loading = false);
+      }
+    }
+
+    Future<void> pickImageSource(ImageSource source, BuildContext ctx) async {
+      Navigator.pop(ctx);
+      try {
+        final result = await ImagePickerHelper.pickImage(source);
+        if (result != null && result.isNotEmpty) {
+          if (mounted) setState(() => _loading = true);
+          await ApiService.updateProfile(avatarUrl: result);
+          await _loadUser();
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                backgroundColor: Colors.green,
+                content: Text("Profile photo updated successfully!"),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        debugPrint("Error picking profile image: $e");
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: Colors.red,
+              content: Text("Could not pick image: $e"),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      } finally {
+        if (mounted) setState(() => _loading = false);
+      }
+    }
+
+    final currentAvatar = (_user?['avatarUrl'] ?? _user?['profileImage'] ?? '').toString().trim();
+
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -144,106 +212,175 @@ class _ProfileSheetState extends State<ProfileSheet> {
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => Padding(
         padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom, left: 24, right: 24, top: 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 44,
-                height: 5,
-                decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(3)),
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text("Update Profile Picture", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 6),
-            const Text("Choose an executive avatar or enter an image URL:", style: TextStyle(fontSize: 13, color: Colors.grey)),
-            const SizedBox(height: 16),
-            SizedBox(
-              height: 70,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: avatarPresets.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 14),
-                itemBuilder: (ctx, idx) {
-                  final item = avatarPresets[idx];
-                  return InkWell(
-                    onTap: () async {
-                      Navigator.pop(ctx);
-                      await ApiService.updateProfile(avatarUrl: item['url']!);
-                      await _loadUser();
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            backgroundColor: Colors.green,
-                            content: Text("Profile picture updated!"),
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
-                      }
-                    },
-                    child: CircleAvatar(
-                      radius: 30,
-                      backgroundColor: Colors.grey.shade200,
-                      backgroundImage: NetworkImage(item['url']!),
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 20),
-            TextField(
-              controller: customUrlCtrl,
-              decoration: InputDecoration(
-                prefixIcon: const Icon(Icons.link),
-                hintText: "Or paste image web link (https://...)",
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.red,
-                      side: BorderSide(color: Colors.red.shade200),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                    onPressed: () async {
-                      Navigator.pop(ctx);
-                      await ApiService.updateProfile(avatarUrl: '');
-                      await _loadUser();
-                    },
-                    child: const Text("Remove Photo"),
-                  ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 5,
+                  decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(3)),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xff2563EB),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              const SizedBox(height: 16),
+              const Text("Update Profile Picture", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 4),
+              const Text("Take a photo, choose from device, or pick an avatar:", style: TextStyle(fontSize: 13, color: Colors.grey)),
+              const SizedBox(height: 18),
+
+              // Camera and Gallery Quick Option Cards
+              Row(
+                children: [
+                  Expanded(
+                    child: InkWell(
+                      onTap: () => pickImageSource(ImageSource.camera, ctx),
+                      borderRadius: BorderRadius.circular(14),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xffEFF6FF),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: const Color(0xffBFDBFE), width: 1.2),
+                        ),
+                        child: const Column(
+                          children: [
+                            CircleAvatar(
+                              radius: 22,
+                              backgroundColor: Color(0xff2563EB),
+                              child: Icon(Icons.photo_camera_rounded, color: Colors.white, size: 22),
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              "Take Photo",
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xff1E40AF)),
+                            ),
+                            SizedBox(height: 2),
+                            Text("Use Camera", style: TextStyle(fontSize: 11, color: Colors.grey)),
+                          ],
+                        ),
+                      ),
                     ),
-                    onPressed: () async {
-                      final url = customUrlCtrl.text.trim();
-                      if (url.isNotEmpty) {
-                        Navigator.pop(ctx);
-                        await ApiService.updateProfile(avatarUrl: url);
-                        await _loadUser();
-                      }
-                    },
-                    child: const Text("Apply URL"),
                   ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: InkWell(
+                      onTap: () => pickImageSource(ImageSource.gallery, ctx),
+                      borderRadius: BorderRadius.circular(14),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xffFAF5FF),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: const Color(0xffE9D5FF), width: 1.2),
+                        ),
+                        child: const Column(
+                          children: [
+                            CircleAvatar(
+                              radius: 22,
+                              backgroundColor: Color(0xff7C3AED),
+                              child: Icon(Icons.photo_library_rounded, color: Colors.white, size: 22),
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              "From Gallery",
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xff6B21A8)),
+                            ),
+                            SizedBox(height: 2),
+                            Text("Device Storage", style: TextStyle(fontSize: 11, color: Colors.grey)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(child: Divider(color: Colors.grey.shade200)),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    child: Text("OR CHOOSE AVATAR PRESET", style: TextStyle(fontSize: 11, color: Colors.grey.shade500, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                  ),
+                  Expanded(child: Divider(color: Colors.grey.shade200)),
+                ],
+              ),
+              const SizedBox(height: 14),
+
+              SizedBox(
+                height: 70,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: avatarPresets.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 14),
+                  itemBuilder: (ctx, idx) {
+                    final item = avatarPresets[idx];
+                    return InkWell(
+                      onTap: () => saveAvatar(item['url']!, ctx),
+                      borderRadius: BorderRadius.circular(30),
+                      child: CircleAvatar(
+                        radius: 30,
+                        backgroundColor: Colors.grey.shade200,
+                        backgroundImage: NetworkImage(item['url']!),
+                      ),
+                    );
+                  },
                 ),
-              ],
-            ),
-            const SizedBox(height: 24),
-          ],
+              ),
+
+              const SizedBox(height: 18),
+              TextField(
+                controller: customUrlCtrl,
+                decoration: InputDecoration(
+                  prefixIcon: const Icon(Icons.link, size: 20),
+                  hintText: "Or paste image web link (https://...)",
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  if (currentAvatar.isNotEmpty) ...[
+                    Expanded(
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.red,
+                          side: BorderSide(color: Colors.red.shade200),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        onPressed: () => saveAvatar('', ctx),
+                        child: const Text("Remove Photo"),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                  ],
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xff2563EB),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      onPressed: () {
+                        final url = customUrlCtrl.text.trim();
+                        if (url.isNotEmpty) {
+                          saveAvatar(url, ctx);
+                        }
+                      },
+                      child: const Text("Apply URL"),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+            ],
+          ),
         ),
       ),
     );
@@ -258,6 +395,7 @@ class _ProfileSheetState extends State<ProfileSheet> {
     final email = _user?['email'] ?? '$empId@devmotors.in';
     final phone = _user?['phone'] ?? _user?['phoneNumber'] ?? _user?['mobile'] ?? 'Not Provided';
     final avatarUrl = (_user?['avatarUrl'] ?? _user?['profileImage'] ?? '').toString().trim();
+    final avatarProvider = ImagePickerHelper.getAvatarImageProvider(avatarUrl);
 
     return Container(
       decoration: const BoxDecoration(
@@ -284,8 +422,8 @@ class _ProfileSheetState extends State<ProfileSheet> {
                     CircleAvatar(
                       radius: 38,
                       backgroundColor: const Color(0xff2563EB).withValues(alpha: 0.1),
-                      backgroundImage: avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
-                      child: avatarUrl.isEmpty
+                      backgroundImage: avatarProvider,
+                      child: avatarProvider == null
                           ? Text(
                               name.isNotEmpty ? name.substring(0, 1).toUpperCase() : 'U',
                               style: const TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: Color(0xff2563EB)),

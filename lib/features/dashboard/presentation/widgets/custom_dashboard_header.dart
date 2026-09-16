@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/utils/image_picker_helper.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../profile/presentation/widgets/profile_sheet.dart';
 import 'notifications_sheet.dart';
@@ -51,7 +52,16 @@ class CustomDashboardHeader extends StatelessWidget {
             child: CircleAvatar(
               backgroundColor: const Color(0xff2563EB).withValues(alpha: 0.1),
               radius: 20,
-              child: const Icon(Icons.person, color: Color(0xff2563EB)),
+              backgroundImage: ImagePickerHelper.getAvatarImageProvider(
+                (user?['avatarUrl'] ?? user?['profileImage'] ?? '').toString().trim(),
+              ),
+              child: ((user?['avatarUrl'] ?? user?['profileImage'] ?? '').toString().trim().isEmpty ||
+                      ImagePickerHelper.getAvatarImageProvider(
+                            (user?['avatarUrl'] ?? user?['profileImage'] ?? '').toString().trim(),
+                          ) ==
+                          null)
+                  ? const Icon(Icons.person, color: Color(0xff2563EB))
+                  : null,
             ),
           ),
           const SizedBox(width: 12),

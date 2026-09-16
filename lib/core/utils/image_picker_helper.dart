@@ -51,6 +51,35 @@ class ImagePickerHelper {
     );
   }
 
+  static Future<String?> pickImage(ImageSource source) async {
+    return _pickAction(source);
+  }
+
+  static ImageProvider? getAvatarImageProvider(String? avatarUrl) {
+    if (avatarUrl == null || avatarUrl.trim().isEmpty) return null;
+    final trimmed = avatarUrl.trim();
+    if (trimmed.startsWith('data:image') || (!trimmed.startsWith('http://') && !trimmed.startsWith('https://') && trimmed.length > 80)) {
+      try {
+        String cleanBase64 = trimmed;
+        if (cleanBase64.contains(',')) {
+          cleanBase64 = cleanBase64.substring(cleanBase64.indexOf(',') + 1);
+        }
+        cleanBase64 = cleanBase64.replaceAll(RegExp(r'\s+'), '');
+        while (cleanBase64.length % 4 != 0) {
+          cleanBase64 += '=';
+        }
+        final bytes = base64Decode(cleanBase64);
+        return MemoryImage(bytes);
+      } catch (e) {
+        debugPrint("Error decoding avatar base64: $e");
+        return null;
+      }
+    } else if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      return NetworkImage(trimmed);
+    }
+    return null;
+  }
+
   static Future<String?> _pickAction(ImageSource source) async {
     try {
       if (kIsWeb) {
