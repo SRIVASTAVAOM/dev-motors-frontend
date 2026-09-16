@@ -351,6 +351,65 @@ class _LoginPageState extends State<LoginPage> {
                                   ),
                           ),
                         ),
+                        const SizedBox(height: 24),
+
+                        // ⚡ 1-Click Fast Login / UI Preview
+                        Row(
+                          children: [
+                            Expanded(child: Divider(color: Colors.grey.shade300)),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 10),
+                              child: Text(
+                                "⚡ 1-CLICK ROLE LOGIN & UI PREVIEW",
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.blueGrey.shade700,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ),
+                            Expanded(child: Divider(color: Colors.grey.shade300)),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        const Text(
+                          "Click any role below to instantly log in or preview its new modular interface:",
+                          style: TextStyle(fontSize: 12, color: Color(0xff64748B)),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 12),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          alignment: WrapAlignment.center,
+                          children: [
+                            _buildRoleLoginChip(
+                              roleLabel: "👑 Owner",
+                              empId: "owner_dron",
+                              role: "OWNER",
+                              accentColor: const Color(0xffD32F2F),
+                            ),
+                            _buildRoleLoginChip(
+                              roleLabel: "📋 Manager",
+                              empId: "nexa_stephen_sm",
+                              role: "MANAGER",
+                              accentColor: const Color(0xff1E40AF),
+                            ),
+                            _buildRoleLoginChip(
+                              roleLabel: "💰 Cashier",
+                              empId: "nexa_shivam_acc",
+                              role: "CASHIER",
+                              accentColor: const Color(0xff059669),
+                            ),
+                            _buildRoleLoginChip(
+                              roleLabel: "👷 Employee",
+                              empId: "nexa_muneesh_bsm",
+                              role: "EMPLOYEE",
+                              accentColor: const Color(0xffD97706),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
@@ -360,6 +419,63 @@ class _LoginPageState extends State<LoginPage> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildRoleLoginChip({
+    required String roleLabel,
+    required String empId,
+    required String role,
+    required Color accentColor,
+  }) {
+    return ActionChip(
+      avatar: CircleAvatar(
+        radius: 10,
+        backgroundColor: accentColor.withValues(alpha: 0.15),
+        child: Icon(Icons.flash_on_rounded, size: 12, color: accentColor),
+      ),
+      label: Text(
+        roleLabel,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          color: accentColor,
+        ),
+      ),
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+        side: BorderSide(color: accentColor.withValues(alpha: 0.35), width: 1.2),
+      ),
+      elevation: 0,
+      pressElevation: 2,
+      onPressed: _isLoading
+          ? null
+          : () {
+              _idController.text = empId;
+              _passController.text = 'Dev@2026';
+              // Set session profile so UI opens with full executive headers instantly
+              ApiService.setAuthSession('demo-token-$role', {
+                'employeeId': empId,
+                'name': role == 'OWNER'
+                    ? 'Drona Agarwal'
+                    : role == 'MANAGER'
+                        ? 'Stephen'
+                        : role == 'CASHIER'
+                            ? 'Shivam'
+                            : 'Muneesh',
+                'role': role,
+                'designation': role == 'OWNER'
+                    ? 'Managing Director / Owner'
+                    : role == 'MANAGER'
+                        ? 'Branch Manager'
+                        : role == 'CASHIER'
+                            ? 'Cashier & Accounts'
+                            : 'Operations Staff',
+                'branch': role == 'OWNER' ? 'All Dealerships Oversight' : 'Aligarh Nexa',
+              });
+              _routeByRole(role);
+            },
     );
   }
 }
