@@ -451,11 +451,11 @@ class _LoginPageState extends State<LoginPage> {
       pressElevation: 2,
       onPressed: _isLoading
           ? null
-          : () {
+          : () async {
               _idController.text = empId;
               _passController.text = 'Dev@2026';
               // Set session profile so UI opens with full executive headers instantly
-              ApiService.setAuthSession('demo-token-$role', {
+              await ApiService.saveAuthSession('demo-token-$role', {
                 'employeeId': empId,
                 'name': role == 'OWNER'
                     ? 'Drona Agarwal'
@@ -474,7 +474,7 @@ class _LoginPageState extends State<LoginPage> {
                             : 'Operations Staff',
                 'branch': role == 'OWNER' ? 'All Dealerships Oversight' : 'Aligarh Nexa',
               });
-              _routeByRole(role);
+              if (mounted) _routeByRole(role);
             },
     );
   }

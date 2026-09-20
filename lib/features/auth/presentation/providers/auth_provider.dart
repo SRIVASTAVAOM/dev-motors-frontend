@@ -64,6 +64,13 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  void setSession(String token, Map<String, dynamic> user) {
+    _token = token;
+    _user = user;
+    _error = null;
+    notifyListeners();
+  }
+
   void logout() {
     _token = null;
     _user = null;

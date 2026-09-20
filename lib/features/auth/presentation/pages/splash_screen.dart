@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../../../core/services/api_service.dart';
 import '../../../../features/auth/presentation/pages/login_page.dart';
 import '../../../../features/dashboard/presentation/pages/employee_dashboard.dart';
 import '../../../../features/dashboard/presentation/pages/manager_dashboard.dart';
 import '../../../../features/dashboard/presentation/pages/cashier_dashboard.dart';
 import '../../../../features/dashboard/presentation/pages/owner_dashboard.dart';
-import '../providers/auth_provider.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -36,13 +36,11 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     await Future.delayed(const Duration(milliseconds: 2500));
     if (!mounted) return;
 
-    final authProvider = AuthProvider();
+    final hasValidSession = await ApiService.restoreSession();
     Widget targetPage = const LoginPage();
 
-    final user = authProvider.user;
-    final token = authProvider.token;
-
-    if (token != null && token.isNotEmpty && user != null) {
+    if (hasValidSession && ApiService.currentUser != null) {
+      final user = ApiService.currentUser!;
       final role = (user['role'] ?? '').toString().toUpperCase();
       if (role == 'OWNER' || role == 'ADMIN') {
         targetPage = const OwnerDashboard();
@@ -54,6 +52,8 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
         targetPage = const EmployeeDashboard();
       }
     }
+
+    if (!mounted) return;
 
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(

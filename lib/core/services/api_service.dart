@@ -1,11 +1,18 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../features/auth/presentation/providers/auth_provider.dart';
 
 class ApiService {
   static const String baseUrl = 'https://dev-motors-backend.onrender.com/api';
   static String? _token;
   static Map<String, dynamic>? _currentUser;
+
+  // 9-hour persistent session window (workday shift duration)
+  static const Duration sessionDuration = Duration(hours: 9);
+  static const String prefAuthToken = 'auth_token';
+  static const String prefAuthUser = 'auth_user';
+  static const String prefAuthTimestamp = 'auth_login_timestamp';
 
   static String? get token => _token;
   static Map<String, dynamic>? get currentUser => _currentUser;
@@ -13,19 +20,66 @@ class ApiService {
   static void setAuthSession(String tokenVal, Map<String, dynamic> userVal) {
     _token = tokenVal;
     _currentUser = userVal;
+    AuthProvider().setSession(tokenVal, userVal);
+  }
+
+  static Future<void> saveAuthSession(String tokenVal, Map<String, dynamic> userVal) async {
+    setAuthSession(tokenVal, userVal);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(prefAuthToken, tokenVal);
+    await prefs.setString(prefAuthUser, jsonEncode(userVal));
+    await prefs.setInt(prefAuthTimestamp, DateTime.now().millisecondsSinceEpoch);
+  }
+
+  static Future<bool> restoreSession() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString(prefAuthToken) ?? '';
+      final userStr = prefs.getString(prefAuthUser) ?? '';
+      final loginTimestamp = prefs.getInt(prefAuthTimestamp) ?? 0;
+
+      if (token.isEmpty || userStr.isEmpty || loginTimestamp == 0) {
+        await logout();
+        return false;
+      }
+
+      final elapsedMs = DateTime.now().millisecondsSinceEpoch - loginTimestamp;
+      if (elapsedMs > sessionDuration.inMilliseconds) {
+        // Session expired (older than 9 hours)
+        await logout();
+        return false;
+      }
+
+      final decoded = jsonDecode(userStr);
+      if (decoded is! Map) {
+        await logout();
+        return false;
+      }
+
+      final userMap = Map<String, dynamic>.from(decoded);
+      setAuthSession(token, userMap);
+      return true;
+    } catch (_) {
+      await logout();
+      return false;
+    }
   }
 
   static Future<String> getToken() async {
-    if (_token != null && _token!.isNotEmpty) return _token!;
-    final prefs = await SharedPreferences.getInstance();
-    _token = prefs.getString('auth_token') ?? '';
-    final userStr = prefs.getString('auth_user');
-    if (userStr != null && userStr.isNotEmpty && _currentUser == null) {
-      try {
-        _currentUser = jsonDecode(userStr);
-      } catch (_) {}
+    if (_token != null && _token!.isNotEmpty) {
+      final prefs = await SharedPreferences.getInstance();
+      final loginTimestamp = prefs.getInt(prefAuthTimestamp) ?? 0;
+      if (loginTimestamp > 0) {
+        final elapsedMs = DateTime.now().millisecondsSinceEpoch - loginTimestamp;
+        if (elapsedMs > sessionDuration.inMilliseconds) {
+          await logout();
+          return '';
+        }
+      }
+      return _token!;
     }
-    return _token!;
+    final valid = await restoreSession();
+    return valid ? (_token ?? '') : '';
   }
 
   // 1. LOGIN
@@ -43,11 +97,7 @@ class ApiService {
     if (res.statusCode == 200 || res.statusCode == 201) {
       final token = decoded['data']?['token'] ?? decoded['token'] ?? '';
       final user = decoded['data']?['user'] ?? decoded['user'] ?? decoded['data'] ?? {};
-      setAuthSession(token, Map<String, dynamic>.from(user));
-
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('auth_token', token);
-      await prefs.setString('auth_user', jsonEncode(user));
+      await saveAuthSession(token, Map<String, dynamic>.from(user));
 
       return decoded;
     } else {
@@ -428,9 +478,11 @@ class ApiService {
   static Future<void> logout() async {
     _token = null;
     _currentUser = null;
+    AuthProvider().logout();
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('auth_token');
-    await prefs.remove('auth_user');
+    await prefs.remove(prefAuthToken);
+    await prefs.remove(prefAuthUser);
+    await prefs.remove(prefAuthTimestamp);
   }
 
   // 14. CREATE STAFF MEMBER
