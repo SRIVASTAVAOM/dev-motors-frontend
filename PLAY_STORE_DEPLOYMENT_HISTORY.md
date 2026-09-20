@@ -87,6 +87,29 @@
 
 ---
 
+### Milestone 6: Modular UI Architecture & 9-Hour Persistent Session (Sep 20, 2026)
+* **Isolated Feature Branch:** `feature/modular-ui-architecture` (Main branch remains untouched with current Play Store build `1.0.0+1`).
+* **9-Hour Smart Session & Auto-Login:**
+  * **Problem Addressed:** Users previously had to re-enter credentials every time the app was reopened.
+  * **Solution:** Added a 9-hour persistent session window (`Duration(hours: 9)`). On app launch, `SplashScreen` calls `ApiService.restoreSession()` which checks `SharedPreferences` for active token and timestamp.
+  * Reopening within 9 hours automatically routes directly to the user's role dashboard (`OwnerDashboard`, `ManagerDashboard`, `CashierDashboard`, or `EmployeeDashboard`).
+  * Expired sessions ($\ge 9$ hours) or manual logout automatically clear storage and navigate to `LoginPage`.
+* **Modular Dashboard & Feature Enhancements:**
+  * Dashboards reorganized into modular executive components with unified tokens.
+  * Date/branch/status quick filters, one-tap CSV export, and receipt viewer modal in Reports.
+  * Profile avatar picker supporting Camera & Gallery with base64 decoding.
+  * 1-Click fast role login chips on login page.
+* **Testing & Quality Assurance:**
+  * Added `test/auth_session_persistence_test.dart` (4/4 tests passed).
+  * Full test suite verification: **55/55 tests passed**.
+  * Static analysis: `flutter analyze` $\rightarrow$ **0 issues found**.
+* **Git Commit & Remote:**
+  * Committed: `0c8e23d` (`feat(auth): implement 9-hour persistent session with auto-login on startup (55/55 tests passing)`).
+  * Pushed to `origin/feature/modular-ui-architecture`.
+  * Ready to merge into `main` when deploying the next update to Play Store / App Store.
+
+---
+
 ## 2. Dedicated 12 Tester Accounts (Active in Database)
 
 **Common Password for All Accounts:** `Dev@1234`
