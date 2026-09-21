@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../features/auth/presentation/providers/auth_provider.dart';
 
 class ApiService {
   static const String baseUrl = 'https://dev-motors-backend.onrender.com/api';
@@ -13,19 +14,43 @@ class ApiService {
   static void setAuthSession(String tokenVal, Map<String, dynamic> userVal) {
     _token = tokenVal;
     _currentUser = userVal;
+    AuthProvider().setSession(tokenVal, userVal);
+  }
+
+  static Future<void> saveAuthSession(String tokenVal, Map<String, dynamic> userVal) async {
+    setAuthSession(tokenVal, userVal);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('auth_token', tokenVal);
+    await prefs.setString('auth_user', jsonEncode(userVal));
+  }
+
+  static Future<bool> restoreSession() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token') ?? '';
+      final userStr = prefs.getString('auth_user') ?? '';
+
+      if (token.isEmpty || userStr.isEmpty) {
+        return false;
+      }
+
+      final decoded = jsonDecode(userStr);
+      if (decoded is! Map) {
+        return false;
+      }
+
+      final userMap = Map<String, dynamic>.from(decoded);
+      setAuthSession(token, userMap);
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   static Future<String> getToken() async {
     if (_token != null && _token!.isNotEmpty) return _token!;
-    final prefs = await SharedPreferences.getInstance();
-    _token = prefs.getString('auth_token') ?? '';
-    final userStr = prefs.getString('auth_user');
-    if (userStr != null && userStr.isNotEmpty && _currentUser == null) {
-      try {
-        _currentUser = jsonDecode(userStr);
-      } catch (_) {}
-    }
-    return _token!;
+    final valid = await restoreSession();
+    return valid ? (_token ?? '') : '';
   }
 
   static String cleanErrorMessage(dynamic error) {
@@ -62,11 +87,7 @@ class ApiService {
       if (res.statusCode == 200 || res.statusCode == 201) {
         final token = decoded['data']?['token'] ?? decoded['token'] ?? '';
         final user = decoded['data']?['user'] ?? decoded['user'] ?? decoded['data'] ?? {};
-        setAuthSession(token, Map<String, dynamic>.from(user));
-
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('auth_token', token);
-        await prefs.setString('auth_user', jsonEncode(user));
+        await saveAuthSession(token, Map<String, dynamic>.from(user));
 
         return decoded;
       } else {
@@ -458,6 +479,7 @@ class ApiService {
   static Future<void> logout() async {
     _token = null;
     _currentUser = null;
+    AuthProvider().logout();
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('auth_token');
     await prefs.remove('auth_user');

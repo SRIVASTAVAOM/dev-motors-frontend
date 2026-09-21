@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../app/app_routes.dart';
+import '../../../../core/services/api_service.dart';
 
 class DashboardDrawer extends StatelessWidget {
   const DashboardDrawer({super.key});
@@ -183,13 +184,15 @@ class DashboardDrawer extends StatelessWidget {
               icon: Icons.logout,
               title: "Logout",
               color: Colors.red,
-              onTap: () {
+              onTap: () async {
                 Navigator.of(context).pop();
-
-                Navigator.of(context).pushNamedAndRemoveUntil(
-                  AppRoutes.login,
-                  (route) => false,
-                );
+                await ApiService.logout();
+                if (context.mounted) {
+                  Navigator.of(context).pushNamedAndRemoveUntil(
+                    AppRoutes.login,
+                    (route) => false,
+                  );
+                }
               },
             ),
 
