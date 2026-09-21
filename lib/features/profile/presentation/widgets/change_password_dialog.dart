@@ -48,7 +48,7 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e.toString().replaceAll('Exception: ', '')),
+            content: Text(ApiService.cleanErrorMessage(e)),
             backgroundColor: Colors.red,
           ),
         );
