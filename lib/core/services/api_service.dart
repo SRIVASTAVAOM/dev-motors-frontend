@@ -28,30 +28,52 @@ class ApiService {
     return _token!;
   }
 
+  static String cleanErrorMessage(dynamic error) {
+    if (error == null) return 'An unexpected error occurred.';
+    final str = error.toString();
+    final lower = str.toLowerCase();
+    if (lower.contains('socketexception') ||
+        lower.contains('failed host lookup') ||
+        lower.contains('onrender.com') ||
+        lower.contains('clientexception') ||
+        lower.contains('network is unreachable') ||
+        lower.contains('connection refused') ||
+        lower.contains('connection timed out') ||
+        lower.contains('connection reset') ||
+        lower.contains('handshakeexception')) {
+      return 'No internet connection. Please check your network and try again.';
+    }
+    return str.replaceAll('Exception:', '').replaceAll('Exception', '').trim();
+  }
+
   // 1. LOGIN
   static Future<Map<String, dynamic>> login(String employeeId, String password) async {
-    final res = await http.post(
-      Uri.parse('$baseUrl/auth/login'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'employeeId': employeeId,
-        'password': password,
-      }),
-    );
+    try {
+      final res = await http.post(
+        Uri.parse('$baseUrl/auth/login'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'employeeId': employeeId,
+          'password': password,
+        }),
+      );
 
-    final decoded = jsonDecode(res.body);
-    if (res.statusCode == 200 || res.statusCode == 201) {
-      final token = decoded['data']?['token'] ?? decoded['token'] ?? '';
-      final user = decoded['data']?['user'] ?? decoded['user'] ?? decoded['data'] ?? {};
-      setAuthSession(token, Map<String, dynamic>.from(user));
+      final decoded = jsonDecode(res.body);
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        final token = decoded['data']?['token'] ?? decoded['token'] ?? '';
+        final user = decoded['data']?['user'] ?? decoded['user'] ?? decoded['data'] ?? {};
+        setAuthSession(token, Map<String, dynamic>.from(user));
 
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('auth_token', token);
-      await prefs.setString('auth_user', jsonEncode(user));
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('auth_token', token);
+        await prefs.setString('auth_user', jsonEncode(user));
 
-      return decoded;
-    } else {
-      throw Exception(decoded['message'] ?? 'Login failed');
+        return decoded;
+      } else {
+        throw Exception(decoded['message'] ?? 'Login failed');
+      }
+    } catch (e) {
+      throw Exception(cleanErrorMessage(e));
     }
   }
 
@@ -78,24 +100,28 @@ class ApiService {
     required String oldPassword,
     required String newPassword,
   }) async {
-    final t = await getToken();
-    final res = await http.post(
-      Uri.parse('$baseUrl/auth/change-password'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $t',
-      },
-      body: jsonEncode({
-        'oldPassword': oldPassword,
-        'newPassword': newPassword,
-      }),
-    );
+    try {
+      final t = await getToken();
+      final res = await http.post(
+        Uri.parse('$baseUrl/auth/change-password'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $t',
+        },
+        body: jsonEncode({
+          'oldPassword': oldPassword,
+          'newPassword': newPassword,
+        }),
+      );
 
-    if (res.statusCode == 200 || res.statusCode == 201) {
-      return jsonDecode(res.body);
-    } else {
       final decoded = jsonDecode(res.body);
-      throw Exception(decoded['message'] ?? 'Failed to change password');
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        return decoded;
+      } else {
+        throw Exception(decoded['message'] ?? 'Failed to change password');
+      }
+    } catch (e) {
+      throw Exception(cleanErrorMessage(e));
     }
   }
 

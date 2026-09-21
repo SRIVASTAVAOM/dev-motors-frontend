@@ -62,13 +62,19 @@ class _LoginPageState extends State<LoginPage> {
       if (mounted) _routeByRole(role);
     } catch (e) {
       if (mounted) {
+        final errorMsg = ApiService.cleanErrorMessage(e);
+        final isNetwork = errorMsg.toLowerCase().contains('internet');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 18),
+                Icon(
+                  isNetwork ? Icons.wifi_off_rounded : Icons.warning_amber_rounded,
+                  color: Colors.white,
+                  size: 18,
+                ),
                 const SizedBox(width: 8),
-                Expanded(child: Text(e.toString().replaceAll("Exception:", "").trim())),
+                Expanded(child: Text(errorMsg)),
               ],
             ),
             backgroundColor: const Color(0xffDC2626),

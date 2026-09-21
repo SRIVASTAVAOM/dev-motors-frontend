@@ -44,21 +44,33 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
 
     setState(() => _loading = true);
 
-    final res = await ApiService.changePassword(
-      oldPassword: oldPass,
-      newPassword: newPass,
-    );
+    try {
+      final res = await ApiService.changePassword(
+        oldPassword: oldPass,
+        newPassword: newPass,
+      );
 
-    if (mounted) {
-      setState(() => _loading = false);
-      if (res['success'] == true) {
-        Navigator.pop(context);
+      if (mounted) {
+        setState(() => _loading = false);
+        if (res['success'] == true) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(backgroundColor: Colors.green, content: Text(res['message'] ?? 'Password changed successfully!')),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(backgroundColor: Colors.red, content: Text(res['message'] ?? 'Failed to update password')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(backgroundColor: Colors.green, content: Text(res['message'] ?? 'Password changed successfully!')),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(backgroundColor: Colors.red, content: Text(res['message'] ?? 'Failed to update password')),
+          SnackBar(
+            backgroundColor: Colors.red,
+            content: Text(ApiService.cleanErrorMessage(e)),
+          ),
         );
       }
     }
