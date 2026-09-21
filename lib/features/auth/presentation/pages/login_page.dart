@@ -91,78 +91,111 @@ class _LoginPageState extends State<LoginPage> {
   void _showForgotPasswordDialog() {
     final resetIdController = TextEditingController();
     final resetPassController = TextEditingController();
+    bool isResetting = false;
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
-          children: [
-            Icon(Icons.lock_reset_rounded, color: Color(0xff2563EB), size: 24),
-            SizedBox(width: 10),
-            Text("Reset Password", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xff0F172A))),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Row(
+            children: [
+              Icon(Icons.lock_reset_rounded, color: Color(0xff2563EB), size: 24),
+              SizedBox(width: 10),
+              Text("Reset Password", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xff0F172A))),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text("Enter your registered Employee ID and new password:", style: TextStyle(fontSize: 13, color: Color(0xff64748B))),
+              const SizedBox(height: 16),
+              TextField(
+                controller: resetIdController,
+                decoration: InputDecoration(
+                  labelText: "Employee ID",
+                  hintText: "e.g. main_arman_gm",
+                  prefixIcon: const Icon(Icons.badge_outlined, size: 20),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: resetPassController,
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: "New Password",
+                  prefixIcon: const Icon(Icons.lock_outline, size: 20),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: isResetting ? null : () => Navigator.pop(ctx),
+              child: const Text("Cancel", style: TextStyle(color: Color(0xff64748B), fontWeight: FontWeight.w600)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xff2563EB),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              ),
+              onPressed: isResetting
+                  ? null
+                  : () async {
+                      final empId = resetIdController.text.trim();
+                      final newPass = resetPassController.text.trim();
+                      final messenger = ScaffoldMessenger.of(context);
+                      final nav = Navigator.of(ctx);
+
+                      if (empId.isEmpty || newPass.isEmpty) {
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: const Text("Please enter both Employee ID and New Password"),
+                            backgroundColor: const Color(0xffDC2626),
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                        );
+                        return;
+                      }
+
+                      setDialogState(() => isResetting = true);
+                      try {
+                        final res = await ApiService.forgotPassword(empId, newPass);
+                        nav.pop();
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: Text(res['message'] ?? "Password reset successful! Please login with your new credentials."),
+                            backgroundColor: const Color(0xff059669),
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                        );
+                      } catch (e) {
+                        setDialogState(() => isResetting = false);
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: Text(e.toString().replaceAll("Exception: ", "")),
+                            backgroundColor: const Color(0xffDC2626),
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                        );
+                      }
+                    },
+              child: isResetting
+                  ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Text("Update Password", style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
           ],
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text("Enter your registered Employee ID and new password:", style: TextStyle(fontSize: 13, color: Color(0xff64748B))),
-            const SizedBox(height: 16),
-            TextField(
-              controller: resetIdController,
-              decoration: InputDecoration(
-                labelText: "Employee ID",
-                hintText: "e.g. main_arman_gm",
-                prefixIcon: const Icon(Icons.badge_outlined, size: 20),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-            const SizedBox(height: 14),
-            TextField(
-              controller: resetPassController,
-              obscureText: true,
-              decoration: InputDecoration(
-                labelText: "New Password",
-                prefixIcon: const Icon(Icons.lock_outline, size: 20),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text("Cancel", style: TextStyle(color: Color(0xff64748B), fontWeight: FontWeight.w600)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xff2563EB),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-            ),
-            onPressed: () async {
-              if (resetIdController.text.trim().isNotEmpty && resetPassController.text.trim().isNotEmpty) {
-                await ApiService.forgotPassword(resetIdController.text.trim(), resetPassController.text.trim());
-                if (ctx.mounted) Navigator.pop(ctx);
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text("Password reset successful! Please login with your new credentials."),
-                      backgroundColor: const Color(0xff059669),
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                  );
-                }
-              }
-            },
-            child: const Text("Update Password", style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
-        ],
       ),
     );
   }

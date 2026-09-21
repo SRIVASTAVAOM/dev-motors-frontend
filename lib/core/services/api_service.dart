@@ -81,18 +81,22 @@ class ApiService {
   static Future<Map<String, dynamic>> forgotPassword(String employeeId, String newPassword) async {
     try {
       final res = await http.post(
-        Uri.parse('$baseUrl/auth/reset-password'),
+        Uri.parse('$baseUrl/auth/forgot-password'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'employeeId': employeeId,
           'newPassword': newPassword,
         }),
       );
+      final decoded = jsonDecode(res.body);
       if (res.statusCode == 200 || res.statusCode == 201) {
-        return jsonDecode(res.body);
+        return decoded;
+      } else {
+        throw Exception(decoded['message'] ?? 'Password reset failed');
       }
-    } catch (_) {}
-    return {'success': true, 'message': 'Password reset request processed'};
+    } catch (e) {
+      throw Exception(cleanErrorMessage(e));
+    }
   }
 
   // 3. CHANGE PASSWORD
