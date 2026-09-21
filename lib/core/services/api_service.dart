@@ -31,11 +31,17 @@ class ApiService {
       final userStr = prefs.getString('auth_user') ?? '';
 
       if (token.isEmpty || userStr.isEmpty) {
+        _token = null;
+        _currentUser = null;
+        AuthProvider().logout();
         return false;
       }
 
       final decoded = jsonDecode(userStr);
       if (decoded is! Map) {
+        _token = null;
+        _currentUser = null;
+        AuthProvider().logout();
         return false;
       }
 
@@ -43,6 +49,9 @@ class ApiService {
       setAuthSession(token, userMap);
       return true;
     } catch (_) {
+      _token = null;
+      _currentUser = null;
+      AuthProvider().logout();
       return false;
     }
   }
