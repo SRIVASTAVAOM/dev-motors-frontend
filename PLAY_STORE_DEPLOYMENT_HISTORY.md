@@ -1,11 +1,14 @@
-# Dev Motors - Google Play Store & Backend Operations History
+# Dev Motors - App Deployment & Operations History (Play Store & App Store)
 
 **App Name:** Dev Motors  
-**Package / Application ID:** `com.devmotors.expenses`  
-**Mobile Tech Stack:** Flutter (Android `compileSdk: 36`, `targetSdk: 36`, Kotlin DSL)  
-**Backend & Database:** Node.js / TypeScript + Prisma ORM + Neon Cloud PostgreSQL  
-**Current Track:** Google Play Closed Testing (Alpha)  
-**Last Updated:** September 20, 2026  
+**Android Package ID:** `com.devmotors.expenses`  
+**iOS Bundle ID:** `com.devmotors.expenses`  
+**Mobile Tech Stack:** Flutter (Android `compileSdk: 36`, `targetSdk: 36` | iOS Swift / CocoaPods)  
+**Backend & Database:** Node.js / TypeScript + Prisma ORM + Neon Cloud PostgreSQL (Render Live API)  
+**Current Status:** 
+- Google Play: Closed Testing v1.0.2 (Build Code 3) Active
+- Apple App Store: Developer Program Enrollment Paid & Pending Apple Activation
+**Last Updated:** September 23, 2026  
 
 ---
 
@@ -79,7 +82,7 @@
 ---
 
 ### Milestone 5: 12 Dedicated Tester Accounts & Official PDF Generation (Sep 20, 2026)
-* Created **12 dedicated dummy accounts** in the live database with common password `Dev@1234`.
+* Created **12 dedicated dummy accounts** in the live database with common password `12345678`.
 * Generated a styled printable PDF:
   * **File:** `Dev_Motors_Testing_Credentials.pdf`
   * **Location:** `/Users/omsrivastava/Downloads/dev_motors_updated/Dev_Motors_Testing_Credentials.pdf`
@@ -88,46 +91,86 @@
 ---
 
 ### Milestone 6: Modular UI Architecture & 9-Hour Persistent Session (Sep 20, 2026)
-* **Isolated Feature Branch:** `feature/modular-ui-architecture` (Main branch remains untouched with current Play Store build `1.0.0+1`).
+* **Isolated Feature Branch:** `feature/modular-ui-architecture` (Main branch preserved with clean release codebase).
 * **9-Hour Smart Session & Auto-Login:**
-  * **Problem Addressed:** Users previously had to re-enter credentials every time the app was reopened.
-  * **Solution:** Added a 9-hour persistent session window (`Duration(hours: 9)`). On app launch, `SplashScreen` calls `ApiService.restoreSession()` which checks `SharedPreferences` for active token and timestamp.
-  * Reopening within 9 hours automatically routes directly to the user's role dashboard (`OwnerDashboard`, `ManagerDashboard`, `CashierDashboard`, or `EmployeeDashboard`).
-  * Expired sessions ($\ge 9$ hours) or manual logout automatically clear storage and navigate to `LoginPage`.
+  * Added a 9-hour persistent session window (`Duration(hours: 9)`). On app launch, `SplashScreen` calls `ApiService.restoreSession()`.
 * **Modular Dashboard & Feature Enhancements:**
-  * Dashboards reorganized into modular executive components with unified tokens.
-  * Date/branch/status quick filters, one-tap CSV export, and receipt viewer modal in Reports.
-  * Profile avatar picker supporting Camera & Gallery with base64 decoding.
-  * 1-Click fast role login chips on login page.
-* **Testing & Quality Assurance:**
-  * Added `test/auth_session_persistence_test.dart` (4/4 tests passed).
-  * Full test suite verification: **55/55 tests passed**.
-  * Static analysis: `flutter analyze` $\rightarrow$ **0 issues found**.
-* **Git Commit & Remote:**
-  * Committed: `0c8e23d` (`feat(auth): implement 9-hour persistent session with auto-login on startup (55/55 tests passing)`).
-  * Pushed to `origin/feature/modular-ui-architecture`.
-  * Ready to merge into `main` when deploying the next update to Play Store / App Store.
+  * Dashboards reorganized into modular executive components with unified tokens (`metric_summary_grid`, `pill_tab_bar`, `unified_claim_card`).
+  * Reports date/branch/status quick filters, one-tap CSV export, and receipt viewer modal.
+
+---
+
+### Milestone 7: Production Bug Fixes & Play Store Release v2 (`1.0.1+2`) (Sep 21, 2026)
+* **In-App Password Change Fix:**
+  * Resolved user ID lookup in backend password controller (`c9da521`) and connected `ChangePasswordDialog` cleanly (`65563ac`).
+* **Friendly Network Error Dialog:**
+  * Replaced red technical crash screens on connectivity loss with a clean user-friendly alert message.
+* **Forgot Password Flow:**
+  * Aligned frontend endpoint to `/auth/forgot-password` and deployed alias route `/reset-password` live to Render backend (`71eadf6`).
+* **Play Store Release v2 (`1.0.1+2`):**
+  * Bumped version to `1.0.1+2` (`be30959`), built release bundle `app-release.aab` (55.4MB), and uploaded to Closed Testing track.
+
+---
+
+### Milestone 8: Permanent Auto-Login, Staff Routing & Play Store Release v3 (`1.0.2+3`) (Sep 21–22, 2026)
+* **Permanent Auto-Login Session:**
+  * Per user request, replaced time-limited session with **infinite auto-login until explicit logout**.
+  * User logs in once; opening the app subsequently bypasses the login screen and routes straight to their role dashboard.
+  * Added `saveAuthSession()`, `restoreSession()`, auto-token restoration in `getToken()`, and complete cache purge on `logout()`.
+  * Verified with automated unit tests (`session_persistence_test.dart` 4/4 passed).
+* **Dealership Staff Database Corrections:**
+  * Updated Employee ID `It_nausad` name to **Noushad Ahmad**.
+  * Configured backend routing: Noushad Ahmad expense claims bypass branch manager and go directly to **`PENDING_OWNER`** for direct Owner approval (`437e8ec`).
+  * Reassigned branches for Girish Sharma, Gaurav Sharma, Birendra Tiwari, Shibli, and Bablu Canteen from `Iglas` to **`Main Outlet`**.
+* **Play Store Release v3 (`1.0.2+3`):**
+  * Version bumped to `1.0.2+3` (`b8ce59e`).
+  * Built release bundle `dev_motors_v1.0.2_release.aab` (55.4MB, Version Code 3, signed with official Dev Motors Keystore valid to 2054).
+  * Saved to Desktop: `~/Desktop/dev_motors_v1.0.2_release.aab` and `~/Desktop/app-release.aab`.
+  * Resolved "Version code 2 has already been used" by refreshing Desktop bundle with verified Version Code 3.
+
+---
+
+### Milestone 9: Apple App Store Setup & iOS Readiness (Sep 22–23, 2026)
+* **Official Bundle Identifier Configured:**
+  * Replaced placeholder `com.example.devMotors` with production **`com.devmotors.expenses`** across `ios/Runner.xcodeproj/project.pbxproj` and `ios/Runner/Info.plist`.
+* **Apple Mandatory Privacy Permissions (`Info.plist`):**
+  * Added required usage descriptions:
+    * `NSCameraUsageDescription`: *"Dev Motors requires access to the camera to take photos of expense receipts and bills."*
+    * `NSPhotoLibraryUsageDescription`: *"Dev Motors requires access to your photo library to upload expense receipts and documents."*
+    * `ITSAppUsesNonExemptEncryption` = `<false/>` to automate export compliance during upload.
+* **App Assets & Verification:**
+  * 1024x1024 Retina App Icon and `Dev Motors` display name confirmed.
+  * Changes committed and pushed to `main` (`7f2d3fc`, `4ca3c28`).
+
+---
+
+### Milestone 10: Apple Developer Program Enrollment & Payment Verification (Sep 23, 2026)
+* **Enrollment Address Error Resolved:**
+  * Fixed *"This address is not valid. To continue enrolling, contact us"* by cleaning special characters from Apple ID billing address on `account.apple.com`.
+* **Fee Paid & Status:**
+  * User successfully completed identity verification and paid the annual $99 Apple Developer Program membership.
+  * Status: **"Enrollment Pending — You'll receive an email soon."** awaiting Apple's automated provisioning.
 
 ---
 
 ## 2. Dedicated 12 Tester Accounts (Active in Database)
 
-**Common Password for All Accounts:** `Dev@1234`
+**Common Password for All Accounts:** `12345678`
 
 | # | Employee ID (Login) | Role | Assigned Name | Common Password | Testing Scope |
 |---|---|---|---|---|---|
-| 01 | `TEST01` | `EMPLOYEE` | Tester 01 | `Dev@1234` | Submit expense claims & upload receipts |
-| 02 | `TEST02` | `EMPLOYEE` | Tester 02 | `Dev@1234` | Submit expense claims & upload receipts |
-| 03 | `TEST03` | `EMPLOYEE` | Tester 03 | `Dev@1234` | Submit expense claims & upload receipts |
-| 04 | `TEST04` | `EMPLOYEE` | Tester 04 | `Dev@1234` | Submit expense claims & upload receipts |
-| 05 | `TEST05` | `EMPLOYEE` | Tester 05 | `Dev@1234` | Submit expense claims & upload receipts |
-| 06 | `TEST06` | `EMPLOYEE` | Tester 06 | `Dev@1234` | Submit expense claims & upload receipts |
-| 07 | `TEST07` | `MANAGER` | Tester 07 | `Dev@1234` | Approve / Reject employee expense claims |
-| 08 | `TEST08` | `MANAGER` | Tester 08 | `Dev@1234` | Approve / Reject employee expense claims |
-| 09 | `TEST09` | `MANAGER` | Tester 09 | `Dev@1234` | Approve / Reject employee expense claims |
-| 10 | `TEST10` | `CASHIER` | Tester 10 | `Dev@1234` | Mark approved claims as Paid & settle cash |
-| 11 | `TEST11` | `CASHIER` | Tester 11 | `Dev@1234` | Mark approved claims as Paid & settle cash |
-| 12 | `TEST12` | `OWNER` | Tester 12 | `Dev@1234` | Executive Dashboard, analytics & reports |
+| 01 | `TEST01` | `EMPLOYEE` | Tester 01 | `12345678` | Submit expense claims & upload receipts |
+| 02 | `TEST02` | `EMPLOYEE` | Tester 02 | `12345678` | Submit expense claims & upload receipts |
+| 03 | `TEST03` | `EMPLOYEE` | Tester 03 | `12345678` | Submit expense claims & upload receipts |
+| 04 | `TEST04` | `EMPLOYEE` | Tester 04 | `12345678` | Submit expense claims & upload receipts |
+| 05 | `TEST05` | `EMPLOYEE` | Tester 05 | `12345678` | Submit expense claims & upload receipts |
+| 06 | `TEST06` | `EMPLOYEE` | Tester 06 | `12345678` | Submit expense claims & upload receipts |
+| 07 | `TEST07` | `MANAGER` | Tester 07 | `12345678` | Approve / Reject employee expense claims |
+| 08 | `TEST08` | `MANAGER` | Tester 08 | `12345678` | Approve / Reject employee expense claims |
+| 09 | `TEST09` | `MANAGER` | Tester 09 | `12345678` | Approve / Reject employee expense claims |
+| 10 | `TEST10` | `CASHIER` | Tester 10 | `12345678` | Mark approved claims as Paid & settle cash |
+| 11 | `TEST11` | `CASHIER` | Tester 11 | `12345678` | Mark approved claims as Paid & settle cash |
+| 12 | `TEST12` | `OWNER` | Tester 12 | `12345678` | Executive Dashboard, analytics & reports |
 
 ---
 
@@ -140,7 +183,7 @@ Share these exact instructions with testers:
    👉 `https://play.google.com/apps/testing/com.devmotors.expenses`
 3. **Click "Become a tester":** Page will reload and confirm: *"Welcome to the testing program"*.
 4. **Click "download it on Google Play":** Tap the blue link to open Google Play Store.
-5. **Install & Login:** Tap green **Install**, open the app, enter your assigned Employee ID (`TEST01`–`TEST12`), and password `Dev@1234`.
+5. **Install & Login:** Tap green **Install**, open the app, enter your assigned Employee ID (`TEST01`–`TEST12`), and password `12345678`.
 6. **Keep Installed for 14 Days:** **Do not uninstall the app** for 14 continuous days so Google's closed testing requirement completes.
 
 ---
