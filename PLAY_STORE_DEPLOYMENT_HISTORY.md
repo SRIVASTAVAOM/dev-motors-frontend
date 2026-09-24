@@ -7,8 +7,8 @@
 **Backend & Database:** Node.js / TypeScript + Prisma ORM + Neon Cloud PostgreSQL (Render Live API)  
 **Current Status:** 
 - Google Play: Closed Testing v1.0.2 (Build Code 3) Active
-- Apple App Store: Developer Program Enrollment Paid & Pending Apple Activation
-**Last Updated:** September 23, 2026  
+- Apple App Store: TestFlight v1.0.2 (Build Code 3) Active & Verified on Physical Device
+**Last Updated:** September 24, 2026  
 
 ---
 
@@ -150,6 +150,28 @@
 * **Fee Paid & Status:**
   * User successfully completed identity verification and paid the annual $99 Apple Developer Program membership.
   * Status: **"Enrollment Pending — You'll receive an email soon."** awaiting Apple's automated provisioning.
+
+---
+
+### Milestone 11: iOS Production Build, Automated Signing & TestFlight Live Deployment (Sep 24, 2026)
+* **Apple Developer Program Activation:**
+  * Apple activated the developer membership (`Team ID: N6NSKY343Z`, Om Kumar).
+* **App Store Connect & Identifier Setup:**
+  * Registered official App ID `com.devmotors.expenses` in Apple Developer Portal.
+  * Created App record **Dev Motors** in App Store Connect with primary category `Business`, secondary `Finance`, and age rating `4+`.
+  * Configured App Privacy disclosures (Name, Email, Expense Financials, Receipt Photos) with zero third-party tracking.
+* **Toolchain & Native Asset Compilation:**
+  * Installed CocoaPods 1.17.0 via Homebrew on Apple Silicon Mac (`arm64`).
+  * Linked Xcode 27.1 Command Line Tools (`/Users/omsrivastava/Downloads/Xcode.app/Contents/Developer`).
+  * Resolved native asset compilation hooks (`objective_c`, `file_picker`, `image_picker_ios`).
+* **Automated Signing & Release Archive:**
+  * Connected Apple ID to Xcode with Automatic Signing (`Om Kumar - N6NSKY343Z`).
+  * Successfully compiled and archived `Runner.xcarchive` (188.3 MB) and exported signed `dev_motors.ipa` (25.6 MB).
+* **TestFlight Deployment & Live Device Verification:**
+  * Uploaded Build 3 (`1.0.2+3`) directly to Apple App Store Connect servers via Xcode Organizer.
+  * Apple backend processed and approved the build with zero compliance warnings (`ITSAppUsesNonExemptEncryption` = `<false/>`).
+  * **Status:** **Ready to Submit (Green Checkmark ✅)** on TestFlight.
+  * Tester installed Dev Motors onto physical iPhone via TestFlight and confirmed all functionality runs smoothly without issues.
 
 ---
 
