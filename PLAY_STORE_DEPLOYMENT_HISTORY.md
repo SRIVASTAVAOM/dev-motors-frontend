@@ -7,7 +7,7 @@
 **Backend & Database:** Node.js / TypeScript + Prisma ORM + Neon Cloud PostgreSQL (Render Live API)  
 **Current Status:** 
 - Google Play: Closed Testing v1.0.2 (Build Code 3) Active
-- Apple App Store: Production Release Build 4 (`1.0.2+4`) Compiled with Official Xcode 27.0 GM (`27A266a`) & Ready for Store Submission
+- Apple App Store: v1.0 (Build 5) Submitted & In Queue (Status: Waiting for Review) on Sep 26, 2026
 **Last Updated:** September 26, 2026  
 
 ---
@@ -194,6 +194,15 @@
     * Saved to Desktop: `~/Desktop/dev_motors_v1.0.2_build4.ipa`
 * **Privacy Policy URL Configured:**
   * Hosted Privacy Policy URL: `https://raw.githubusercontent.com/SRIVASTAVAOM/dev-motors-frontend/main/PRIVACY_POLICY.md`
+* **Transporter Warning 90683 & Build 5 (`1.0.2+5`) Compilation:**
+  * Added `NSLocationWhenInUseUsageDescription` to `Info.plist` to clear static analyzer warning.
+  * Version bumped to `1.0.2+5`.
+  * Uploaded Build 5 (`dev_motors_v1.0.2_build5.ipa`, 24.5 MB) via Transporter with 0 warnings & 0 errors.
+* **Official Apple Store Review Submission (Sep 26, 2026 at 5:54 PM):**
+  * Selected Build 5 under App Store Version 1.0.
+  * Attached reviewer demo credentials (`TEST01` / `12345678`) and operational explanation.
+  * **Submission ID:** `957c5de9-c369-41b4-87ce-4ad9acf380e8`
+  * **Official Status:** **Waiting for Review (Yellow Clock 🕒)** in Apple Review Queue.
 
 ---
 
