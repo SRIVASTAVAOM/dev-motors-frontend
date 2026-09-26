@@ -32,6 +32,8 @@
 	<string>Dev Motors requires access to the camera to take photos of expense receipts and bills.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Dev Motors requires access to your photo library to upload expense receipts and documents.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Dev Motors may access location to attach dealership branch location to expense records.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
