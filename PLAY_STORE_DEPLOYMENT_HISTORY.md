@@ -7,8 +7,8 @@
 **Backend & Database:** Node.js / TypeScript + Prisma ORM + Neon Cloud PostgreSQL (Render Live API)  
 **Current Status:** 
 - Google Play: Closed Testing v1.0.2 (Build Code 3) Active
-- Apple App Store: TestFlight v1.0.2 (Build Code 3) Active & Verified on Physical Device
-**Last Updated:** September 24, 2026  
+- Apple App Store: Production Release Build 4 (`1.0.2+4`) Compiled with Official Xcode 27.0 GM (`27A266a`) & Ready for Store Submission
+**Last Updated:** September 26, 2026  
 
 ---
 
@@ -172,6 +172,28 @@
   * Apple backend processed and approved the build with zero compliance warnings (`ITSAppUsesNonExemptEncryption` = `<false/>`).
   * **Status:** **Ready to Submit (Green Checkmark ✅)** on TestFlight.
   * Tester installed Dev Motors onto physical iPhone via TestFlight and confirmed all functionality runs smoothly without issues.
+
+---
+
+### Milestone 12: App Store Submission Resolution & Official GM Build 4 (Sep 26, 2026)
+* **App Store Connect Submission Review Feedback:**
+  * Initial submission attempt flagged 3 items:
+    1. *Missing iPad 13-inch screenshots* (due to Build 3 targeting both iPhone and iPad).
+    2. *Xcode Beta version rejected* (due to Build 3 compiled with Xcode 27.1 Beta `27A9269`).
+    3. *Missing Privacy Policy URL* in App Privacy.
+* **Official Stable Toolchain Transition:**
+  * User successfully downloaded and installed official **Xcode 27.0 GM (Build `27A266a`)** to `/Applications/Xcode.app`.
+  * Pointed `xcode-select` to `/Applications/Xcode.app/Contents/Developer`.
+  * Removed legacy hardcoded `export DEVELOPER_DIR=/Users/omsrivastava/Downloads/Xcode.app/...` build phase script from `Runner.xcodeproj`.
+* **iPhone-Only & Official GM Compilation:**
+  * Version bumped to `1.0.2+4` in `pubspec.yaml`.
+  * Verified `TARGETED_DEVICE_FAMILY = "1"` (`UIDeviceFamily = [1]`), completely removing iPad requirement and iPad screenshot checks.
+  * Compiled and archived `Runner_Build4.xcarchive` (`DTXcode: 2700`, `DTXcodeBuild: 27A266a`, `SDK: 27.0`).
+  * Placed archive into Xcode Archives: `~/Library/Developer/Xcode/Archives/2026-09-26/Runner_Build4.xcarchive`.
+  * Successfully exported signed production release IPA (`24.5 MB`):
+    * Saved to Desktop: `~/Desktop/dev_motors_v1.0.2_build4.ipa`
+* **Privacy Policy URL Configured:**
+  * Hosted Privacy Policy URL: `https://raw.githubusercontent.com/SRIVASTAVAOM/dev-motors-frontend/main/PRIVACY_POLICY.md`
 
 ---
 
