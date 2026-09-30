@@ -5,6 +5,7 @@ import '../../../../core/utils/claim_workflow_engine.dart';
 import '../../../../core/utils/safe_parser.dart';
 import '../../../expenses/presentation/widgets/approval_stepper.dart';
 import '../../../expenses/presentation/widgets/receipt_viewer_dialog.dart';
+import '../../../expenses/presentation/widgets/department_badge.dart';
 import '../../../profile/presentation/widgets/profile_sheet.dart';
 import '../../../profile/presentation/widgets/change_password_dialog.dart';
 import '../../../../core/services/csv_export_service.dart';
@@ -24,6 +25,8 @@ class ManagerDashboard extends StatefulWidget {
 class _ManagerDashboardState extends State<ManagerDashboard> {
   int _navIndex = 0;
   int _selectedTab = 0;
+  String _selectedDepartment = 'All'; // 'All' | 'Sales' | 'Service'
+  bool _deptInitialized = false;
   bool _isLoading = true;
   bool _showAllBranches = false;
   List<dynamic> _expenses = [];
@@ -49,6 +52,15 @@ class _ManagerDashboardState extends State<ManagerDashboard> {
 
       setState(() {
         _expenses = List<dynamic>.from(list);
+        if (!_deptInitialized) {
+          final currentUser = _profile ?? ApiService.currentUser;
+          if (ClaimWorkflowEngine.isSalesManager(currentUser)) {
+            _selectedDepartment = 'Sales';
+          } else if (ClaimWorkflowEngine.isServiceManager(currentUser)) {
+            _selectedDepartment = 'Service';
+          }
+          _deptInitialized = true;
+        }
       });
     } catch (_) {}
     finally {
@@ -170,20 +182,18 @@ class _ManagerDashboardState extends State<ManagerDashboard> {
       ApiService.currentUser?['location'] ??
       ApiService.currentUser?['branch'];
 
-  List<dynamic> get _allPendingClaims => _expenses.where((e) {
-    if (e is! Map) return false;
-    if (_isClaimCreatedByMe(e)) return false; // Self-created claims never enter Manager review queue!
-    final status = e['status'];
-    return ClaimWorkflowEngine.isPendingForManager(status, e);
-  }).toList();
-
-  List<dynamic> get _actionNeededList {
+  List<dynamic> get _baseActionNeededList {
     final mgrBranch = _currentMgrBranch;
-    final pending = _allPendingClaims;
+    final allPending = _expenses.where((e) {
+      if (e is! Map) return false;
+      if (_isClaimCreatedByMe(e)) return false; // Self-created claims never enter Manager review queue!
+      final status = e['status'];
+      return ClaimWorkflowEngine.isPendingForManager(status, e);
+    }).toList();
 
-    if (_showAllBranches) return pending;
+    if (_showAllBranches) return allPending;
 
-    final branchFiltered = pending.where((e) {
+    final branchFiltered = allPending.where((e) {
       final expBranch = e['branch'] ??
           e['branchName'] ??
           (e['location'] is Map ? e['location']['name'] : e['location']) ??
@@ -201,12 +211,22 @@ class _ManagerDashboardState extends State<ManagerDashboard> {
     return branchFiltered;
   }
 
-  List<dynamic> get _myClaimsList => _expenses.where((e) {
+  List<dynamic> get _allPendingClaims => _baseActionNeededList;
+
+  List<dynamic> get _actionNeededList => _baseActionNeededList
+      .where((e) => ClaimWorkflowEngine.matchesDepartment(e, _selectedDepartment))
+      .toList();
+
+  List<dynamic> get _baseMyClaimsList => _expenses.where((e) {
     if (e is! Map) return false;
     return _isClaimCreatedByMe(e) && !ClaimWorkflowEngine.isSettledOrRejected(e['status'], e);
   }).toList();
 
-  List<dynamic> get _historyList {
+  List<dynamic> get _myClaimsList => _baseMyClaimsList
+      .where((e) => ClaimWorkflowEngine.matchesDepartment(e, _selectedDepartment))
+      .toList();
+
+  List<dynamic> get _baseHistoryList {
     final mgrBranch = _currentMgrBranch;
     return _expenses.where((e) {
       if (e is! Map) return false;
@@ -232,6 +252,59 @@ class _ManagerDashboardState extends State<ManagerDashboard> {
       final status = e['status'];
       return !ClaimWorkflowEngine.isPendingForManager(status, e);
     }).toList();
+  }
+
+  List<dynamic> get _historyList => _baseHistoryList
+      .where((e) => ClaimWorkflowEngine.matchesDepartment(e, _selectedDepartment))
+      .toList();
+
+  List<dynamic> get _currentBaseList {
+    if (_selectedTab == 0) return _baseActionNeededList;
+    if (_selectedTab == 1) return _baseMyClaimsList;
+    return _baseHistoryList;
+  }
+
+  int get _salesCount => _currentBaseList.where((e) => ClaimWorkflowEngine.getDepartment(e) == 'Sales').length;
+  int get _serviceCount => _currentBaseList.where((e) => ClaimWorkflowEngine.getDepartment(e) == 'Service').length;
+  int get _totalCount => _currentBaseList.length;
+
+  Widget _buildDeptChip(String key, String label, int count, IconData icon) {
+    final isSelected = _selectedDepartment == key;
+    Color activeColor = const Color(0xff2563EB);
+    if (key == 'Sales') activeColor = const Color(0xff2563EB);
+    if (key == 'Service') activeColor = const Color(0xff059669);
+
+    return InkWell(
+      onTap: () => setState(() => _selectedDepartment = key),
+      borderRadius: BorderRadius.circular(20),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? activeColor.withValues(alpha: 0.12) : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? activeColor : Colors.grey.shade300,
+            width: isSelected ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 13, color: isSelected ? activeColor : Colors.grey.shade600),
+            const SizedBox(width: 5),
+            Text(
+              "$label ($count)",
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                color: isSelected ? activeColor : Colors.grey.shade700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -346,6 +419,10 @@ class _ManagerDashboardState extends State<ManagerDashboard> {
                                     ),
                                   ],
                                 ),
+                              ),
+                              DepartmentBadge(
+                                department: ClaimWorkflowEngine.isSalesManager(_profile ?? ApiService.currentUser) ? 'Sales' : 'Service',
+                                isCompact: true,
                               ),
                             ],
                           ),
@@ -492,6 +569,21 @@ class _ManagerDashboardState extends State<ManagerDashboard> {
                 ),
                 const SizedBox(height: 12),
 
+                // Department Category Filter Chips
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _buildDeptChip('All', 'All', _totalCount, Icons.dashboard_outlined),
+                      const SizedBox(width: 8),
+                      _buildDeptChip('Sales', 'Sales', _salesCount, Icons.storefront_rounded),
+                      const SizedBox(width: 8),
+                      _buildDeptChip('Service', 'Service', _serviceCount, Icons.build_rounded),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+
                 if (_selectedTab == 0) ...[
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -611,10 +703,57 @@ class _ManagerDashboardState extends State<ManagerDashboard> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(_getString(exp['description'], 'Expense Claim'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        "${isOwnClaim ? 'My Expense' : _getString(exp['employee'] is Map ? exp['employee']['name'] : (exp['employeeName'] ?? exp['userName']), 'Staff')} (${isOwnClaim ? 'MANAGER' : ClaimWorkflowEngine.extractCreatorRole(exp)}) • ${_getString(exp['location'] is Map ? exp['location']['name'] : (exp['location'] ?? exp['branch']), userBranch)}",
-                                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                                      const SizedBox(height: 6),
+                                      Wrap(
+                                        spacing: 6,
+                                        runSpacing: 4,
+                                        crossAxisAlignment: WrapCrossAlignment.center,
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                                            decoration: BoxDecoration(
+                                              color: Colors.grey.shade100,
+                                              borderRadius: BorderRadius.circular(6),
+                                              border: Border.all(color: Colors.grey.shade300),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(Icons.person_outline, size: 11, color: Colors.grey.shade700),
+                                                const SizedBox(width: 3),
+                                                Text(
+                                                  isOwnClaim
+                                                      ? 'My Expense'
+                                                      : _getString(exp['employee'] is Map ? exp['employee']['name'] : (exp['employeeName'] ?? exp['userName']), 'Staff'),
+                                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.grey.shade800),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                                            decoration: BoxDecoration(
+                                              color: Colors.grey.shade100,
+                                              borderRadius: BorderRadius.circular(6),
+                                              border: Border.all(color: Colors.grey.shade300),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(Icons.location_on_outlined, size: 11, color: Colors.grey.shade700),
+                                                const SizedBox(width: 3),
+                                                Text(
+                                                  _getString(exp['location'] is Map ? exp['location']['name'] : (exp['location'] ?? exp['branch']), userBranch),
+                                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.grey.shade800),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          DepartmentBadge(
+                                            department: ClaimWorkflowEngine.getDepartment(exp),
+                                            isCompact: true,
+                                          ),
+                                        ],
                                       ),
                                     ],
                                   ),

@@ -5,6 +5,7 @@ import '../../../../core/utils/claim_workflow_engine.dart';
 import '../../../../core/utils/safe_parser.dart';
 import '../../../expenses/presentation/widgets/approval_stepper.dart';
 import '../../../expenses/presentation/widgets/receipt_viewer_dialog.dart';
+import '../../../expenses/presentation/widgets/department_badge.dart';
 import '../../../profile/presentation/widgets/profile_sheet.dart';
 import '../../../profile/presentation/widgets/change_password_dialog.dart';
 import '../../../reports/presentation/pages/reports_page.dart';
@@ -188,6 +189,10 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
                                     ),
                                   ],
                                 ),
+                              ),
+                              DepartmentBadge(
+                                department: ClaimWorkflowEngine.getDepartment(_profile ?? ApiService.currentUser),
+                                isCompact: true,
                               ),
                             ],
                           ),
@@ -428,10 +433,36 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(_getString(exp['description'], 'Expense Claim'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          "${_getString(exp['category'], 'General')} • ${_getString(exp['location'], userBranch)}",
-                                          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                                        const SizedBox(height: 6),
+                                        Wrap(
+                                          spacing: 6,
+                                          runSpacing: 4,
+                                          crossAxisAlignment: WrapCrossAlignment.center,
+                                          children: [
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                                              decoration: BoxDecoration(
+                                                color: Colors.grey.shade100,
+                                                borderRadius: BorderRadius.circular(6),
+                                                border: Border.all(color: Colors.grey.shade300),
+                                              ),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Icon(Icons.location_on_outlined, size: 11, color: Colors.grey.shade700),
+                                                  const SizedBox(width: 3),
+                                                  Text(
+                                                    _getString(exp['location'], userBranch),
+                                                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.grey.shade800),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            DepartmentBadge(
+                                              department: ClaimWorkflowEngine.getDepartment(exp),
+                                              isCompact: true,
+                                            ),
+                                          ],
                                         ),
                                       ],
                                     ),

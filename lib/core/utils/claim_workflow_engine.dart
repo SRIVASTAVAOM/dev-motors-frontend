@@ -508,4 +508,134 @@ class ClaimWorkflowEngine {
     }
     return 'Policy criteria not met';
   }
+
+  // ===========================================================================
+  // DEPARTMENT CLASSIFICATION & ROUTING RULES
+  // ===========================================================================
+
+  static const List<String> salesKeywords = [
+    'stephen',
+    'ahmar',
+    'pankaj',
+    'raj vardhan',
+    'nitesh pal',
+    'nitesh',
+    'shibli',
+  ];
+
+  static const List<String> salesEmployeeIds = [
+    'nexa_stephen_sm',
+    'main_ahmar_gm',
+    'khair_pankaj_sm',
+    'atrauli_raj_sm',
+    'iglas_nitesh_sm',
+    'iglas_shibli_rec',
+  ];
+
+  static const List<String> salesOwnerIds = [
+    'owner_sumit',
+    'owner_gaurav_sharma',
+  ];
+
+  static const List<String> serviceOwnerIds = [
+    'owner_arpit',
+    'owner_dron',
+  ];
+
+  /// Categorizes an expense into 'Sales' or 'Service' department.
+  /// Rule: Stephen, Ahmar, Pankaj, Raj Vardhan, Nitesh Pal, Shibli -> 'Sales'
+  /// All other users/employees -> 'Service' by default.
+  static String getDepartment(dynamic exp) {
+    if (exp == null) return 'Service';
+
+    if (exp is Map) {
+      final explicitDept = SafeParser.getString(exp['department']);
+      if (explicitDept == 'Sales' || explicitDept == 'Service') {
+        return explicitDept;
+      }
+    }
+
+    final empId = SafeParser.getString(
+      exp is Map
+          ? (exp['employeeId'] ??
+              (exp['employee'] is Map ? exp['employee']['employeeId'] : null) ??
+              exp['id'])
+          : exp,
+    ).toLowerCase().trim();
+
+    final name = SafeParser.getString(
+      exp is Map
+          ? (exp['employee'] is Map ? exp['employee']['name'] : null) ??
+              exp['employeeName'] ??
+              exp['userName'] ??
+              (exp['employee'] is String ? exp['employee'] : '')
+          : '',
+    ).toLowerCase().trim();
+
+    final email = SafeParser.getString(
+      exp is Map ? (exp['employee'] is Map ? exp['employee']['email'] : exp['email']) : '',
+    ).toLowerCase().trim();
+
+    // 1. Match by exact Sales Employee IDs
+    for (final id in salesEmployeeIds) {
+      if (empId == id || empId.contains(id)) return 'Sales';
+    }
+
+    // 2. Match by Sales Keywords in Name, Email, or ID
+    for (final kw in salesKeywords) {
+      final compact = kw.replaceAll(' ', '');
+      if (name.contains(kw) || email.contains(compact) || empId.contains(compact)) {
+        return 'Sales';
+      }
+    }
+
+    return 'Service';
+  }
+
+  /// Checks if user is a Sales Owner (Sumit Agarwal or Gaurav Sharma).
+  static bool isSalesOwner(dynamic user) {
+    if (user == null) return false;
+    final empId = SafeParser.getString(user is Map ? (user['employeeId'] ?? user['id']) : user).toLowerCase().trim();
+    final name = SafeParser.getString(user is Map ? user['name'] : '').toLowerCase().trim();
+    return empId == 'owner_sumit' ||
+        empId == 'owner_gaurav_sharma' ||
+        name.contains('sumit') ||
+        name.contains('gaurav sharma');
+  }
+
+  /// Checks if user is a Service Owner (Arpit Verma or Drona Agarwal).
+  static bool isServiceOwner(dynamic user) {
+    if (user == null) return false;
+    final empId = SafeParser.getString(user is Map ? (user['employeeId'] ?? user['id']) : user).toLowerCase().trim();
+    final name = SafeParser.getString(user is Map ? user['name'] : '').toLowerCase().trim();
+    return empId == 'owner_arpit' ||
+        empId == 'owner_dron' ||
+        name.contains('arpit') ||
+        name.contains('dron');
+  }
+
+  /// Returns the assigned department for an owner, or null if oversight covers all.
+  static String? getOwnerDepartment(dynamic user) {
+    if (isSalesOwner(user)) return 'Sales';
+    if (isServiceOwner(user)) return 'Service';
+    return null;
+  }
+
+  /// Checks if a manager is a Sales Manager.
+  static bool isSalesManager(dynamic user) {
+    if (user == null) return false;
+    return getDepartment(user) == 'Sales';
+  }
+
+  /// Checks if a manager is a Service Manager.
+  static bool isServiceManager(dynamic user) {
+    if (user == null) return false;
+    return getDepartment(user) == 'Service';
+  }
+
+  /// Filters an expense list by department ('All', 'Sales', 'Service').
+  static bool matchesDepartment(dynamic exp, String filterDept) {
+    if (filterDept == 'All' || filterDept.isEmpty) return true;
+    return getDepartment(exp).toLowerCase() == filterDept.toLowerCase();
+  }
 }
