@@ -10,6 +10,7 @@ void main() {
         {'id': 'khair_pankaj_sm', 'name': 'Pankaj', 'role': 'EMPLOYEE'},
         {'id': 'atrauli_raj_sm', 'name': 'Raj Vardhan', 'role': 'EMPLOYEE'},
         {'id': 'iglas_nitesh_sm', 'name': 'Nitesh Pal', 'role': 'EMPLOYEE'},
+        {'id': 'main_shibli_rec', 'name': 'Shibli', 'role': 'EMPLOYEE'},
         {'id': 'iglas_shibli_rec', 'name': 'Shibli', 'role': 'EMPLOYEE'},
       ];
 

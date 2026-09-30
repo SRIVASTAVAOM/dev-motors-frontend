@@ -368,25 +368,25 @@ void main() {
     test('Gaurav Sharma, Birendra, and Bablu bypass Manager and enter Owner Queue directly', () {
       final gauravExp = {
         'id': 'exp-gaurav-1',
-        'employeeId': 'iglas_gaurav_cashier',
+        'employeeId': 'main_gaurav_cashier',
         'employeeName': 'Gaurav Sharma',
         'status': 'PENDING_OWNER',
       };
       final birendraExp = {
         'id': 'exp-birendra-1',
-        'employeeId': 'iglas_birendra_emp',
+        'employeeId': 'main_birendra_emp',
         'employeeName': 'Birendra Tiwari',
         'status': 'PENDING_MANAGER',
       };
       final babluExp = {
         'id': 'exp-bablu-1',
-        'employeeId': 'iglas_bablu_can',
+        'employeeId': 'main_bablu_can',
         'employeeName': 'Bablu Canteen',
         'status': 'PENDING',
       };
       final shibliExp = {
         'id': 'exp-shibli-1',
-        'employeeId': 'iglas_shibli_rec',
+        'employeeId': 'main_shibli_rec',
         'employeeName': 'Shibli',
         'status': 'PENDING_MANAGER',
       };
@@ -435,7 +435,7 @@ void main() {
       expect(ClaimWorkflowEngine.isPendingForManager('PENDING_MANAGER', sunilExp), isTrue);
 
       // Shibli still reports to Ahmar (Sales Manager)
-      final shibliExp = {'id': 'exp-shibli', 'employeeId': 'iglas_shibli_rec', 'employeeName': 'Shibli'};
+      final shibliExp = {'id': 'exp-shibli', 'employeeId': 'main_shibli_rec', 'employeeName': 'Shibli'};
       expect(ClaimWorkflowEngine.isDirectOwnerReporting(shibliExp), isFalse);
       expect(ClaimWorkflowEngine.isPendingForManager('PENDING_MANAGER', shibliExp), isTrue);
       expect(ClaimWorkflowEngine.getDepartment(shibliExp), equals('Sales'));
