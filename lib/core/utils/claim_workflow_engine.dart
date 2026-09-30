@@ -300,15 +300,85 @@ class ClaimWorkflowEngine {
     return _cashierPaidExpenseIds.contains(expenseId);
   }
 
+  /// Safely determines if an expense creator reports directly to the Owner, bypassing Manager Level 1 review.
+  /// Rule: Noushad Ahmad, Gaurav Sharma (Cashier/staff), Birendra Tiwari, Bablu Canteen,
+  /// Gyanendra Singhle, Radha Pal, Santosh, Sunny, Muneesh Kumar, Akash Sharma, Yogesh Kumar, and Rajendra Dubey
+  /// report directly to Owners; their claims NEVER pass through Manager review.
+  static bool isDirectOwnerReporting(dynamic exp) {
+    if (exp == null) return false;
+
+    final empId = SafeParser.getString(
+      exp is Map
+          ? (exp['employeeId'] ??
+              (exp['employee'] is Map ? exp['employee']['employeeId'] : null) ??
+              exp['id'])
+          : exp,
+    ).toLowerCase().trim();
+
+    final name = SafeParser.getString(
+      exp is Map
+          ? (exp['employee'] is Map ? exp['employee']['name'] : null) ??
+              exp['employeeName'] ??
+              exp['userName'] ??
+              (exp['employee'] is String ? exp['employee'] : '')
+          : '',
+    ).toLowerCase().trim();
+
+    final email = SafeParser.getString(
+      exp is Map ? (exp['employee'] is Map ? exp['employee']['email'] : exp['email']) : '',
+    ).toLowerCase().trim();
+
+    // Check by ID or Name or Email
+    if (empId.contains('nausad') || empId.contains('noushad') || name.contains('noushad') || name.contains('nausad') || email.contains('nausad')) {
+      return true;
+    }
+    if (empId.contains('birendra') || name.contains('birendra') || email.contains('birendra')) {
+      return true;
+    }
+    if (empId.contains('bablu') || name.contains('bablu') || email.contains('bablu')) {
+      return true;
+    }
+    if (empId.contains('gyanendra') || name.contains('gyanendra') || email.contains('gyanendra')) {
+      return true;
+    }
+    if (empId.contains('radha') || name.contains('radha') || email.contains('radha')) {
+      return true;
+    }
+    if (empId.contains('santosh') || name.contains('santosh') || email.contains('santosh')) {
+      return true;
+    }
+    if (empId.contains('sunny') || name.contains('sunny') || email.contains('sunny')) {
+      return true;
+    }
+    if (empId.contains('muneesh') || name.contains('muneesh') || email.contains('muneesh')) {
+      return true;
+    }
+    if (empId.contains('akash') || name.contains('akash') || email.contains('akash')) {
+      return true;
+    }
+    if (empId.contains('yogesh') || name.contains('yogesh') || email.contains('yogesh')) {
+      return true;
+    }
+    if (empId.contains('rajendra') || name.contains('rajendra') || email.contains('rajendra')) {
+      return true;
+    }
+    if ((empId.contains('gaurav') && !empId.contains('owner')) ||
+        (name.contains('gaurav') && !name.contains('owner') && !isSalesOwner(exp))) {
+      return true;
+    }
+
+    return false;
+  }
+
   /// Returns `true` only for initial pending states (`PENDING`, `SUBMITTED`, `LEVEL_1`, `MANAGER_REVIEW`, `PENDING_MANAGER`).
   /// Returns `false` for `PENDING_OWNER`, `PENDING_CASHIER`, `APPROVED`, `REJECTED`, `PAID`, etc.
   static bool isPendingForManager(dynamic rawStatus, [dynamic exp]) {
     if (isSettledOrRejected(rawStatus, exp)) return false;
 
-    // Check bypass FIRST: Manager, Owner, or Cashier-created claims NEVER enter Manager level 1 review
+    // Check bypass FIRST: Manager, Owner, Cashier, or Direct Owner Reporting claims NEVER enter Manager level 1 review
     if (exp != null) {
       final role = extractCreatorRole(exp);
-      if (role == 'MANAGER' || role == 'OWNER' || role == 'CASHIER') {
+      if (role == 'MANAGER' || role == 'OWNER' || role == 'CASHIER' || isDirectOwnerReporting(exp)) {
         return false;
       }
     }
@@ -348,7 +418,7 @@ class ClaimWorkflowEngine {
   }
 
   /// Returns `true` if claim is in Owner review queue.
-  /// Incorporates the bypass matrix: Manager-created and Cashier-created expenses
+  /// Incorporates the bypass matrix: Manager-created, Cashier-created, and Direct Owner Reporting expenses
   /// directly enter the Owner queue.
   static bool isPendingForOwner(dynamic rawStatus, [dynamic exp]) {
     if (isSettledOrRejected(rawStatus, exp)) return false;
@@ -382,9 +452,10 @@ class ClaimWorkflowEngine {
     // Escalation & Bypass Matrix:
     // - Manager Creates Expense -> Directly enters Owner Queue.
     // - Cashier Creates Expense -> Enters Owner Queue for signoff before self-disbursal.
+    // - Direct Owner Reporting Employees (Noushad, Gaurav Sharma, Birendra, Bablu) -> Directly enter Owner Queue!
     if (exp != null) {
       final role = extractCreatorRole(exp);
-      if (role == 'MANAGER' || role == 'CASHIER') {
+      if (role == 'MANAGER' || role == 'CASHIER' || isDirectOwnerReporting(exp)) {
         return true;
       }
     }

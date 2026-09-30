@@ -27,7 +27,8 @@ class ApprovalStepper extends StatelessWidget {
     final effCreatorRole = (creatorRole != null && creatorRole!.isNotEmpty)
         ? creatorRole!.toUpperCase()
         : (expense != null ? ClaimWorkflowEngine.extractCreatorRole(expense) : 'EMPLOYEE');
-    final isManagerClaim = effCreatorRole == 'MANAGER' || effCreatorRole == 'CASHIER';
+    final isDirectOwnerClaim = ClaimWorkflowEngine.isDirectOwnerReporting(expense);
+    final isManagerClaim = effCreatorRole == 'MANAGER' || effCreatorRole == 'CASHIER' || isDirectOwnerClaim;
 
     final isOwnerRejected = isRejected && (s.contains('OWNER') || s.contains('DIRECTOR') || isManagerClaim);
     final isManagerRejected = isRejected && !isOwnerRejected;

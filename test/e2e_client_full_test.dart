@@ -28,7 +28,7 @@ void main() {
         Uri.parse('$baseUrl/auth/login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          'employeeId': 'nexa_muneesh_bsm',
+          'employeeId': 'main_sunil_spare',
           'password': defaultPassword,
         }),
       );
@@ -52,11 +52,11 @@ void main() {
         },
         body: jsonEncode({
           'amount': 1250,
-          'description': 'E2E Client Test - Client Showroom Refreshments',
+          'description': 'E2E Client Test - Main Outlet Spare Parts Packing',
           'categoryId': 'b87165b9-fc92-4444-8573-13240e421837',
-          'location': 'Aligarh Nexa',
+          'location': 'Main Outlet',
           'receiptUrl': 'https://devmotors-assets.s3.amazonaws.com/receipts/bill.png',
-          'receiptFileName': 'tea_snack_bill.jpg',
+          'receiptFileName': 'packing_bill.jpg',
         }),
       );
       expect(res.statusCode, anyOf([200, 201]), reason: 'Expense creation must succeed');
@@ -75,7 +75,7 @@ void main() {
         Uri.parse('$baseUrl/auth/login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          'employeeId': 'nexa_stephen_sm',
+          'employeeId': 'main_dinesh_gm',
           'password': defaultPassword,
         }),
       );
@@ -101,7 +101,7 @@ void main() {
       );
       expect(claimInQueue, isNotNull, reason: 'Employee claim must appear in branch manager queue');
       expect(ClaimWorkflowEngine.isPendingForManager(claimInQueue['status'], claimInQueue), isTrue);
-      print('✅ 3. Manager Logged In: Claim verified in Action Needed Queue for Aligarh Nexa');
+      print('✅ 3. Manager Logged In: Claim verified in Action Needed Queue for Main Outlet');
     });
 
     // 4. Manager Approves Employee Claim
@@ -115,7 +115,7 @@ void main() {
         },
         body: jsonEncode({
           'action': 'APPROVED_1',
-          'comments': 'Verified hospitality bills by Stephen (SM)',
+          'comments': 'Verified spare parts bills by Dinesh Sharma (GM)',
         }),
       );
       expect(res.statusCode, 200, reason: 'Manager approval must succeed');
@@ -144,7 +144,7 @@ void main() {
           'amount': 2200,
           'description': 'E2E Client Test - Manager Fuel & Inter-branch Travel',
           'categoryId': 'b87165b9-fc92-4444-8573-13240e421837',
-          'location': 'Aligarh Nexa',
+          'location': 'Main Outlet',
           'receiptUrl': 'https://devmotors-assets.s3.amazonaws.com/receipts/bill.png',
           'receiptFileName': 'fuel_bill.jpg',
         }),
@@ -249,7 +249,7 @@ void main() {
         Uri.parse('$baseUrl/auth/login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          'employeeId': 'nexa_shivam_acc',
+          'employeeId': 'iglas_grish_acc',
           'password': defaultPassword,
         }),
       );
