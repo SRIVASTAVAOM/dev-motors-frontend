@@ -64,6 +64,23 @@ void main() {
       expect(find.text('Settled & Paid • Funds Disbursed'), findsOneWidget);
     });
 
+    testWidgets('renders all 4 green check ticks when marked paid via ClaimWorkflowEngine even with PENDING_CASHIER status', (WidgetTester tester) async {
+      ClaimWorkflowEngine.markCashierPaid('exp-cashier-paid-1');
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: ApprovalStepper(
+              status: 'PENDING_CASHIER',
+              expense: {'id': 'exp-cashier-paid-1'},
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byIcon(Icons.check), findsNWidgets(4)); // All 4 steps completed with green tick
+      expect(find.text('Settled & Paid • Funds Disbursed'), findsOneWidget);
+    });
+
     testWidgets('renders rejected state with custom reason and red cross', (WidgetTester tester) async {
       await tester.pumpWidget(
         const MaterialApp(

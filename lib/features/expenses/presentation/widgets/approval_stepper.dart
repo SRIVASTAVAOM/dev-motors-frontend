@@ -23,6 +23,7 @@ class ApprovalStepper extends StatelessWidget {
 
     final expId = expense is Map ? SafeParser.getString(expense['id'] ?? expense['_id']) : '';
     final isOwnerApprovedInEngine = expId.isNotEmpty && ClaimWorkflowEngine.isOwnerApproved(expId);
+    final isCashierPaidInEngine = expId.isNotEmpty && ClaimWorkflowEngine.isCashierPaid(expId);
 
     final effCreatorRole = (creatorRole != null && creatorRole!.isNotEmpty)
         ? creatorRole!.toUpperCase()
@@ -34,7 +35,7 @@ class ApprovalStepper extends StatelessWidget {
     final isManagerRejected = isRejected && !isOwnerRejected;
 
     int currentStep = 1;
-    if (s.contains('PAID') || s.contains('DISBURSED') || s.contains('SETTLE')) {
+    if (s.contains('PAID') || s.contains('DISBURSED') || s.contains('SETTLE') || isCashierPaidInEngine) {
       currentStep = 4;
     } else if (s.contains('PENDING_CASHIER') || s.contains('APPROVED_2') || s.contains('OWNER_APPROVED') || s.contains('APPROVED_OWNER') || isOwnerApprovedInEngine) {
       currentStep = 3;

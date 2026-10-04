@@ -47,6 +47,13 @@ class _ExpenseDetailsPageState extends State<ExpenseDetailsPage> {
   Future<void> _handleAction(String action, {double? newAmount, String? remarks}) async {
     setState(() => _isLoading = true);
     try {
+      final actUpper = action.toUpperCase();
+      if (actUpper.contains('PAY') || actUpper.contains('DISBURSE') || actUpper.contains('SETTLE')) {
+        final id = _currentExpense['id']?.toString() ?? '';
+        if (id.isNotEmpty) {
+          ClaimWorkflowEngine.markCashierPaid(id);
+        }
+      }
       final res = await ApiService.processApproval(
         expenseId: _currentExpense['id'],
         action: action,
@@ -208,7 +215,7 @@ class _ExpenseDetailsPageState extends State<ExpenseDetailsPage> {
                       const SizedBox(width: 16),
                       Expanded(
                         child: ElevatedButton(
-                          onPressed: () => _handleAction('APPROVE'),
+                          onPressed: () => _handleAction(role == 'CASHIER' ? 'PAY' : 'APPROVE'),
                           child: Text(role == 'CASHIER' ? 'PROCESS & PAY' : 'APPROVE'),
                         ),
                       ),

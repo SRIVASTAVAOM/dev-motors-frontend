@@ -393,7 +393,7 @@ class ApiService {
     final act = action.toUpperCase();
     if (act.contains('REJECT')) {
       backendAction = 'REJECT';
-    } else if (act.contains('PAY') || act.contains('DISBURSE') || act.contains('SETTLE')) {
+    } else if (act.contains('PAY') || act.contains('PAID') || act.contains('DISBURSE') || act.contains('SETTLE')) {
       backendAction = 'PAY';
     } else if (act.contains('APPROVED_1') || act.contains('LEVEL_1')) {
       backendAction = 'APPROVED_1';
@@ -405,6 +405,8 @@ class ApiService {
         backendAction = 'APPROVED_1';
       } else if (role == 'OWNER') {
         backendAction = 'APPROVED_2';
+      } else if (role == 'CASHIER') {
+        backendAction = 'PAY';
       } else {
         backendAction = 'APPROVE';
       }
